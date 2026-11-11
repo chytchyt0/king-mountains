@@ -155,11 +155,11 @@
         <!-- Центр: Баннер царя + Холст + Управление -->
         <div class="lg:col-span-8 flex flex-col items-center w-full">
             
-            <!-- Карточка Царя Горы -->
+            <!-- Карточка Царя Горы (исправлены размеры аватарки) -->
             <div id="kingBanner" class="w-full max-w-[820px] mb-4 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3.5">
-                        <div id="kingAvatarWrapper" class="w-13 h-13 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                        <div id="kingAvatarWrapper" class="w-12 h-12 max-w-[48px] max-h-[48px] rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0 shadow-inner">
                             <span id="kingAvatarDefault">👑</span>
                             <img id="kingAvatarImg" src="" alt="Аватарка" class="w-full h-full object-cover hidden">
                         </div>
@@ -231,14 +231,14 @@
                     </p>
                 </div>
 
-                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" -->
-                <div id="lockedCanvasOverlay" class="hidden absolute inset-0 bg-slate-900/75 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-20">
+                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" (Синхронно через Supabase) -->
+                <div id="lockedCanvasOverlay" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-20">
                     <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400 mb-3 animate-bounce">
                         <i class="fa-solid fa-paint-roller text-2xl"></i>
                     </div>
                     <h3 class="font-display font-bold text-lg sm:text-xl tracking-tight">Кто-то уже рисует.. ожидайте</h3>
                     <p class="text-slate-300 text-xs sm:text-sm max-w-sm mt-1.5">
-                        Прямо сейчас художник занял холст и готовит шедевр.
+                        Художник <span id="lockedByName" class="font-bold text-amber-300"></span> прямо сейчас создаёт рисунок на холсте.
                     </p>
                     <div class="mt-4 px-4 py-1.5 rounded-full bg-white/15 border border-white/20 text-xs font-mono font-semibold flex items-center gap-2">
                         <i class="fa-regular fa-clock text-amber-400"></i>
@@ -255,7 +255,6 @@
 
             <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ -->
             <div id="drawingToolbar" class="hidden w-full max-w-[820px] mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-4">
-                
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <button type="button" data-color="#0f172a" class="color-swatch w-7 h-7 rounded-full bg-slate-900 border-2 border-white ring-2 ring-indigo-500 transition transform hover:scale-110" title="Черный"></button>
@@ -554,7 +553,7 @@
 
             <!-- Автор работы -->
             <div class="flex items-center gap-3.5 mb-3.5">
-                <div id="viewArtAvatar" class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0">
+                <div id="viewArtAvatar" class="w-12 h-12 max-w-[48px] max-h-[48px] rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0">
                     👑
                 </div>
                 <div>
@@ -610,10 +609,9 @@
         Царь Холста • Независимый арт-аукцион • Рисуй, владей троном, побеждай
     </footer>
 
-    <!-- JS ЛОГИКА + SUPABASE -->
+    <!-- JS ЛОГИКА + SUPABASE С СИНХРОНИЗАЦИЕЙ БЛОКИРОВКИ -->
     <script>
         (function() {
-            // Подключение к твоей базе данных
             const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
             const SUPABASE_KEY = 'sb_publishable_Goz2iCXq20ySsctUBX1MWg_5ZpD7eVQ';
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -625,14 +623,16 @@
                 customMaxPrice: 15,
                 selectedPrice: 12,
 
-                // Данные забронировавшего
                 bookingData: null,
                 isMyTurnDrawing: false,
                 someoneElseDrawing: false,
+                lockedUntil: null,
+                lockedByName: '',
 
-                // Таймеры
-                drawingSecondsLeft: 1200, // 20 мин
+                drawingSecondsLeft: 1200,
                 drawingInterval: null,
+                lockCheckerInterval: null,
+
                 immunitySecondsLeft: 0,
                 immunityInterval: null,
 
@@ -640,7 +640,6 @@
                 history: [],
                 currentlyViewedArt: null,
 
-                // Инструменты
                 brushColor: '#0f172a',
                 brushSize: 8,
                 tool: 'brush',
@@ -653,6 +652,7 @@
             const customBrushDot = document.getElementById('customBrushDot');
             const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
             const lockedCanvasOverlay = document.getElementById('lockedCanvasOverlay');
+            const lockedByNameEl = document.getElementById('lockedByName');
             const lockedTimerText = document.getElementById('lockedTimerText');
             const canvasShieldBadge = document.getElementById('canvasShieldBadge');
             const editingModeNotice = document.getElementById('editingModeNotice');
@@ -971,7 +971,7 @@
             function updateMainButtonState() {
                 if (state.someoneElseDrawing) {
                     startDrawBookingBtn.disabled = true;
-                    startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят другим художником</span>';
+                    startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят художником</span>';
                 } else if (state.immunitySecondsLeft > 0) {
                     startDrawBookingBtn.disabled = true;
                     startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Щит активен (${formatTime(state.immunitySecondsLeft)})</span>`;
@@ -981,7 +981,48 @@
                 }
             }
 
-            function startDrawingSession() {
+            // Синхронизация блокировки холста через Supabase
+            async function lockCanvasOnServer(name, minutes = 20) {
+                const lockUntil = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+                await supabaseClient
+                    .from('canvas_lock')
+                    .upsert([{ id: 1, is_locked: true, locked_by: name, locked_until: lockUntil }]);
+            }
+
+            async function unlockCanvasOnServer() {
+                await supabaseClient
+                    .from('canvas_lock')
+                    .upsert([{ id: 1, is_locked: false, locked_by: null, locked_until: null }]);
+            }
+
+            async function checkLockStatus() {
+                const { data } = await supabaseClient
+                    .from('canvas_lock')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
+
+                if (!data) return;
+
+                if (data.is_locked && !state.isMyTurnDrawing) {
+                    const diff = Math.floor((new Date(data.locked_until).getTime() - Date.now()) / 1000);
+                    if (diff > 0) {
+                        state.someoneElseDrawing = true;
+                        state.lockedByName = data.locked_by || 'Аноним';
+                        lockedByNameEl.textContent = state.lockedByName;
+                        lockedCanvasOverlay.classList.remove('hidden');
+                        lockedTimerText.textContent = formatTime(diff);
+                        updateMainButtonState();
+                        return;
+                    }
+                }
+
+                state.someoneElseDrawing = false;
+                lockedCanvasOverlay.classList.add('hidden');
+                updateMainButtonState();
+            }
+
+            async function startDrawingSession() {
                 state.isMyTurnDrawing = true;
                 state.drawingSecondsLeft = 1200; // 20 минут
 
@@ -997,8 +1038,11 @@
                 fillCanvasWhite();
                 saveUndoState();
 
+                // Оповещаем весь мир в Supabase о блокировке холста
+                await lockCanvasOnServer(state.bookingData.name, 20);
+
                 window.onbeforeunload = function() {
-                    return "Ты сейчас рисуешь на холсте! Если обновишь или выйдешь, холст сгорит, а деньги не вернутся.";
+                    return "Ты сейчас рисуешь на холсте! Если закроешь страницу, холст освободится, а оплата сгорит.";
                 };
 
                 clearInterval(state.drawingInterval);
@@ -1007,8 +1051,8 @@
                     drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
                     if (state.drawingSecondsLeft <= 0) {
                         clearInterval(state.drawingInterval);
-                        alert("20 минут истекли! Время сессии вышло.");
-                        finishDrawingSession(false);
+                        alert("20 минут истекли! Время вышло.");
+                        finishDrawingSession();
                     }
                 }, 1000);
             }
@@ -1036,7 +1080,7 @@
                 confirmPublishModal.classList.add('hidden');
             });
 
-            function finishDrawingSession() {
+            async function finishDrawingSession() {
                 state.isMyTurnDrawing = false;
                 window.onbeforeunload = null;
                 clearInterval(state.drawingInterval);
@@ -1046,6 +1090,9 @@
                 viewModeControls.classList.remove('hidden');
                 canvas.classList.remove('canvas-editing');
                 customBrushDot.style.display = 'none';
+
+                // Снимаем блокировку на сервере
+                await unlockCanvasOnServer();
             }
 
             finalPublishBtn.addEventListener('click', async () => {
@@ -1080,7 +1127,7 @@
                     return;
                 }
 
-                finishDrawingSession();
+                await finishDrawingSession();
                 await syncFromDatabase();
             });
 
@@ -1314,15 +1361,23 @@
                     renderHistory();
                     updateMainButtonState();
                 }
+
+                await checkLockStatus();
             }
 
-            // Realtime слушатель
+            // Realtime слушатель истории и статуса блокировки
             supabaseClient
-                .channel('realtime:canvas_history_v2')
+                .channel('realtime:tsar_channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
                     syncFromDatabase();
                 })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_lock' }, () => {
+                    checkLockStatus();
+                })
                 .subscribe();
+
+            // Периодическая проверка статуса блокировки каждые 2 секунды
+            setInterval(checkLockStatus, 2000);
 
             // Счетчик просмотров
             let viewsCount = parseInt(localStorage.getItem('tsar_views_count') || '1', 10);
