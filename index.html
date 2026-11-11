@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Царь Горы — Битва Холстов</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & Unbounded for hype headers -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0d13;
+            background-image: 
+                radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+                radial-gradient(at 85% 85%, rgba(236, 72, 153, 0.1) 0px, transparent 45%);
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        @keyframes pulseGlowEdit {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(99, 102, 241, 0.7), 0 0 45px rgba(168, 85, 247, 0.5), inset 0 0 12px rgba(99, 102, 241, 0.3);
+                border-color: #818cf8;
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(236, 72, 153, 0.85), 0 0 70px rgba(99, 102, 241, 0.7), inset 0 0 20px rgba(236, 72, 153, 0.35);
+                border-color: #f472b6;
+            }
+        }
+
+        .canvas-editing {
+            animation: pulseGlowEdit 2.2s infinite ease-in-out;
+            border-width: 4px !important;
+            cursor: crosshair;
+        }
+
+        @keyframes shieldPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.45), 0 0 40px rgba(234, 179, 8, 0.25);
+                border-color: #f59e0b;
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.75), 0 0 55px rgba(234, 179, 8, 0.4);
+                border-color: #fbbf24;
+            }
+        }
+
+        .canvas-shielded {
+            animation: shieldPulse 3s infinite ease-in-out;
+            border-width: 4px !important;
+        }
+
+        .canvas-default {
+            border: 3px solid #27272a;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        #mainCanvas {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #12151f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-pink-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-crown text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-2">
+                        ЦАРЬ ГОРЫ
+                        <span class="text-[10px] font-sans font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Онлайн</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Каждый новый рисунок дороже предыдущего на +10%</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 sm:gap-5">
+                <div class="text-right">
+                    <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Перебитий</span>
+                    <span id="statTotalBids" class="font-display font-bold text-sm sm:text-base text-white">0</span>
+                </div>
+                <div class="h-7 w-[1px] bg-slate-800"></div>
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl px-3.5 py-1.5 flex items-center gap-2.5">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Цена выкупа сейчас</span>
+                        <span id="headerCurrentPrice" class="font-display font-extrabold text-amber-400 text-base sm:text-lg">10 ₽</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <div class="lg:col-span-8 flex flex-col items-center w-full">
+            
+            <div id="kingBanner" class="w-full max-w-[640px] mb-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border border-slate-700/80 p-3.5 sm:p-4 shadow-xl transition-all duration-300">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3.5">
+                        <div id="kingAvatar" class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl shrink-0">
+                            👑
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-crown text-[10px]"></i> Царь горы:
+                                </span>
+                                <span id="kingPriceBadge" class="hidden text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    Захватил за 10 ₽
+                                </span>
+                            </div>
+                            <h2 id="kingName" class="font-bold text-base sm:text-lg text-white mt-0.5">
+                                Никто <span class="text-slate-400 font-normal text-sm">(холст свободен)</span>
+                            </h2>
+                            <div id="kingSocialWrapper" class="hidden mt-0.5">
+                                <a id="kingSocialLink" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                    <i class="fa-solid fa-link text-[10px]"></i>
+                                    <span id="kingSocialText">@username</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="immunityBox" class="hidden flex-col items-end bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
+                        <div class="flex items-center gap-2 text-amber-300 font-semibold text-xs sm:text-sm">
+                            <i class="fa-solid fa-shield-halved animate-pulse"></i>
+                            <span>Иммунитет:</span>
+                            <span id="immunityTimerText" class="font-mono font-bold text-amber-400 text-sm sm:text-base">10:00</span>
+                        </div>
+                        <button id="skipTimerBtn" type="button" class="mt-1 text-[11px] text-amber-200/80 hover:text-white underline decoration-dashed flex items-center gap-1 transition">
+                            <i class="fa-solid fa-forward-fast text-[10px]"></i> Сбросить таймер (тест)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editingModeNotice" class="hidden w-full max-w-[640px] mb-3 px-4 py-2 rounded-xl bg-indigo-600/20 border border-indigo-400/40 text-indigo-200 text-xs sm:text-sm flex items-center justify-between animate-fade-in">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+                    <span class="font-medium">Режим рисования активен! Края холста подсвечены. Твори!</span>
+                </div>
+                <span class="font-mono text-xs text-indigo-300 hidden sm:inline">600×420 px</span>
+            </div>
+
+            <div class="relative w-full max-w-[640px] aspect-[10/7] flex items-center justify-center">
+                <canvas 
+                    id="mainCanvas" 
+                    width="800" 
+                    height="560" 
+                    class="w-full h-full bg-white rounded-2xl transition-all duration-300 canvas-default"
+                ></canvas>
+
+                <div id="emptyCanvasOverlay" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-inner">
+                        <i class="fa-solid fa-paintbrush text-2xl"></i>
+                    </div>
+                    <p class="text-slate-400 font-display font-bold text-base sm:text-lg">Холст пока чист</p>
+                    <p class="text-slate-400/80 text-xs sm:text-sm max-w-xs mt-1">
+                        Нажми «Перебить рисунок» ниже, нарисуй что угодно и оставь ссылку на себя!
+                    </p>
+                </div>
+
+                <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3 right-3 bg-amber-500/95 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Защищено щитом</span>
+                </div>
+            </div>
+
+            <div id="drawingToolbar" class="hidden w-full max-w-[640px] mt-4 bg-slate-900/95 border border-indigo-500/40 rounded-2xl p-4 shadow-2xl space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button type="button" data-color="#0f172a" class="color-swatch w-7 h-7 rounded-full bg-slate-900 border-2 border-white ring-2 ring-indigo-500 transition transform hover:scale-110" title="Черный"></button>
+                        <button type="button" data-color="#ef4444" class="color-swatch w-7 h-7 rounded-full bg-red-500 border-2 border-transparent hover:scale-110 transition transform" title="Красный"></button>
+                        <button type="button" data-color="#f97316" class="color-swatch w-7 h-7 rounded-full bg-orange-500 border-2 border-transparent hover:scale-110 transition transform" title="Оранжевый"></button>
+                        <button type="button" data-color="#eab308" class="color-swatch w-7 h-7 rounded-full bg-yellow-500 border-2 border-transparent hover:scale-110 transition transform" title="Желтый"></button>
+                        <button type="button" data-color="#22c55e" class="color-swatch w-7 h-7 rounded-full bg-green-500 border-2 border-transparent hover:scale-110 transition transform" title="Зеленый"></button>
+                        <button type="button" data-color="#3b82f6" class="color-swatch w-7 h-7 rounded-full bg-blue-500 border-2 border-transparent hover:scale-110 transition transform" title="Синий"></button>
+                        <button type="button" data-color="#a855f7" class="color-swatch w-7 h-7 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 transition transform" title="Фиолетовый"></button>
+                        <button type="button" data-color="#ec4899" class="color-swatch w-7 h-7 rounded-full bg-pink-500 border-2 border-transparent hover:scale-110 transition transform" title="Розовый"></button>
+                        
+                        <label class="relative w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-400 via-pink-500 to-yellow-400 flex items-center justify-center cursor-pointer hover:scale-110 transition transform" title="Выбрать свой цвет">
+                            <input type="color" id="customColorPicker" value="#6366f1" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
+                            <i class="fa-solid fa-eye-dropper text-[10px] text-white drop-shadow"></i>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                        <i class="fa-solid fa-circle text-[8px] text-slate-400"></i>
+                        <input id="brushSizeSlider" type="range" min="2" max="42" value="8" class="w-24 accent-indigo-500 cursor-pointer">
+                        <span id="brushSizeLabel" class="text-xs font-mono text-slate-300 w-7 text-right">8px</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" id="toolBrushBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-paintbrush"></i> Кисть
+                        </button>
+                        <button type="button" id="toolEraserBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-eraser"></i> Ластик
+                        </button>
+                        <button type="button" id="undoBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition" title="Отменить последнее движение">
+                            <i class="fa-solid fa-rotate-left"></i> Шаг назад
+                        </button>
+                        <button type="button" id="loadPrevArtBtn" class="hidden px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 flex items-center gap-1.5 transition" title="Подгрузить чужой рисунок, чтобы дорисовать поверх него">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Дорисовать поверх прошлого
+                        </button>
+                    </div>
+
+                    <button type="button" id="clearCanvasBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-trash-can"></i> Очистить
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+                    <button type="button" id="cancelEditBtn" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+                        Отмена
+                    </button>
+                    <button type="button" id="openPublishModalBtn" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition transform active:scale-95">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Опубликовать шедевр</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="viewModeControls" class="w-full max-w-[640px] mt-5 flex flex-col items-center">
+                <button 
+                    type="button" 
+                    id="startOverrideBtn"
+                    class="w-full py-4 px-6 rounded-2xl font-display font-bold text-base sm:text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                    <i id="overrideBtnIcon" class="fa-solid fa-paintbrush"></i>
+                    <span id="overrideBtnText">Перебить рисунок за 10 ₽</span>
+                </button>
+                <p id="nextPriceHint" class="text-xs text-slate-400 mt-2 text-center">
+                    После публикации твой рисунок получит <span class="text-amber-400 font-semibold">🛡️ 10 минут неуязвимости</span>, а цена вырастет на +10%
+                </p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 flex flex-col gap-5 w-full">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                <h3 class="font-display font-bold text-sm uppercase tracking-wider text-slate-200 flex items-center gap-2 mb-3">
+                    <i class="fa-solid fa-fire text-orange-500"></i> Правила битвы
+                </h3>
+                <ul class="space-y-2.5 text-xs sm:text-sm text-slate-300">
+                    <li class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                        <span>Жми <b>«Перебить рисунок»</b> — откроется редактор с неоновой подсветкой.</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                        <span>Рисуй с нуля или глумись над прошлым художеством, нажав «Дорисовать поверх».</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+                        <span>Укажи свое имя и ссылку на ТГ/Инсту/Тредс.</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</span>
+                        <span>Твой рисунок висит в топе минимум <b>10 минут</b> под щитом, а следующий заплатит на 10% больше!</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-display font-bold text-sm uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> История захватов
+                    </h3>
+                    <span id="historyCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">0</span>
+                </div>
+
+                <div id="historyList" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    <div id="emptyHistoryText" class="text-center py-8 text-slate-500 text-xs">
+                        История пока пуста.<br>Стань первым Царем Горы!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="publishModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/90 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-fade-in">
+            <button type="button" id="closeModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl">
+                    👑
+                </div>
+                <div>
+                    <h3 class="font-display font-bold text-lg text-white">Захват Холста</h3>
+                    <p class="text-xs text-slate-400">Оставь след и ссылку на свой блог или проект</p>
+                </div>
+            </div>
+
+            <form id="publishForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Твое имя или название проекта *
+                    </label>
+                    <input 
+                        type="text" 
+                        id="authorNameInput" 
+                        required 
+                        maxlength="32"
+                        placeholder="Например: Влад | Стартап из Тредс"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Ник в соцсетях или ссылка (по желанию)
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-sm">
+                            <i class="fa-solid fa-at"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            id="authorSocialInput" 
+                            maxlength="50"
+                            placeholder="username или t.me/my_channel"
+                            class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        >
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-3.5 space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-400">Стоимость размещения:</span>
+                        <span id="modalPriceDisplay" class="font-display font-bold text-amber-400 text-base">10 ₽</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Защита от перебития:</span>
+                        <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-shield-halved"></i> 10 минут (Иммунитет)
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-700/60">
+                        <span class="text-slate-400">Следующий заплатит:</span>
+                        <span id="modalNextPriceDisplay" class="text-indigo-300 font-semibold">12 ₽ (+10%)</span>
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="submitFormBtn"
+                    class="w-full py-3.5 px-5 rounded-xl font-display font-bold text-sm sm:text-base bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 hover:from-amber-300 hover:via-orange-400 hover:to-pink-400 text-slate-950 shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 transition transform active:scale-95 disabled:opacity-50"
+                >
+                    <i class="fa-solid fa-crown"></i>
+                    <span id="modalSubmitBtnText">Оплатить 10 ₽ и стать Царем Горы</span>
+                </button>
+                <p class="text-[11px] text-center text-slate-500">
+                    Тестовый режим: данные сразу сохраняются в базу Supabase
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 border border-emerald-500/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <div>
+            <p id="toastTitle" class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Успешно!</p>
+            <p id="toastMessage" class="text-sm text-slate-200">Ты стал новым Царем Горы!</p>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800/60 py-4 text-center text-xs text-slate-500 mt-8">
+        Концепт вирусного аукциона «Царь Горы» • Рисуй, пиарься, держи оборону
+    </footer>
+
+    <!-- ЕДИНЫЙ БЛОК ЛОГИКИ + SUPABASE -->
+    <script>
+        (function() {
+            // Подключение к твоей базе Supabase
+            const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
+            const SUPABASE_KEY = 'sb_publishable_Goz2iCXq20ySsctUBX1MWg_5ZpD7eVQ';
+            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            const state = {
+                currentPrice: 10,
+                totalBids: 0,
+                isEditing: false,
+                currentKing: null,
+                history: [],
+                
+                brushColor: '#0f172a',
+                brushSize: 8,
+                tool: 'brush',
+                isDrawing: false,
+                undoStack: [],
+                
+                immunitySecondsLeft: 0,
+                immunityInterval: null
+            };
+
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
+            const canvasShieldBadge = document.getElementById('canvasShieldBadge');
+            const editingModeNotice = document.getElementById('editingModeNotice');
+
+            const statTotalBids = document.getElementById('statTotalBids');
+            const headerCurrentPrice = document.getElementById('headerCurrentPrice');
+            const kingName = document.getElementById('kingName');
+            const kingPriceBadge = document.getElementById('kingPriceBadge');
+            const kingSocialWrapper = document.getElementById('kingSocialWrapper');
+            const kingSocialLink = document.getElementById('kingSocialLink');
+            const kingSocialText = document.getElementById('kingSocialText');
+
+            const immunityBox = document.getElementById('immunityBox');
+            const immunityTimerText = document.getElementById('immunityTimerText');
+            const skipTimerBtn = document.getElementById('skipTimerBtn');
+
+            const drawingToolbar = document.getElementById('drawingToolbar');
+            const viewModeControls = document.getElementById('viewModeControls');
+            const startOverrideBtn = document.getElementById('startOverrideBtn');
+            const overrideBtnText = document.getElementById('overrideBtnText');
+            const overrideBtnIcon = document.getElementById('overrideBtnIcon');
+
+            const colorSwatches = document.querySelectorAll('.color-swatch');
+            const customColorPicker = document.getElementById('customColorPicker');
+            const brushSizeSlider = document.getElementById('brushSizeSlider');
+            const brushSizeLabel = document.getElementById('brushSizeLabel');
+            const toolBrushBtn = document.getElementById('toolBrushBtn');
+            const toolEraserBtn = document.getElementById('toolEraserBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const loadPrevArtBtn = document.getElementById('loadPrevArtBtn');
+            const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const openPublishModalBtn = document.getElementById('openPublishModalBtn');
+
+            const publishModal = document.getElementById('publishModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const publishForm = document.getElementById('publishForm');
+            const authorNameInput = document.getElementById('authorNameInput');
+            const authorSocialInput = document.getElementById('authorSocialInput');
+            const modalPriceDisplay = document.getElementById('modalPriceDisplay');
+            const modalNextPriceDisplay = document.getElementById('modalNextPriceDisplay');
+            const modalSubmitBtnText = document.getElementById('modalSubmitBtnText');
+            const submitFormBtn = document.getElementById('submitFormBtn');
+
+            const historyList = document.getElementById('historyList');
+            const historyCountBadge = document.getElementById('historyCountBadge');
+
+            const toastNotification = document.getElementById('toastNotification');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+
+            function calculateNextPrice(current) {
+                const plusTen = Math.ceil(current * 1.1);
+                return Math.max(plusTen, current + 2);
+            }
+
+            function formatTime(sec) {
+                const m = Math.floor(sec / 60).toString().padStart(2, '0');
+                const s = (sec % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            }
+
+            function showToast(title, message) {
+                toastTitle.textContent = title;
+                toastMessage.textContent = message;
+                toastNotification.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toastNotification.classList.add('translate-y-20', 'opacity-0');
+                }, 3800);
+            }
+
+            function fillCanvasWhite() {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function saveUndoState() {
+                if (state.undoStack.length >= 20) state.undoStack.shift();
+                state.undoStack.push(canvas.toDataURL('image/png'));
+            }
+
+            function drawImageFromDataUrl(dataUrl, callback) {
+                const img = new Image();
+                img.onload = () => {
+                    fillCanvasWhite();
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    if (callback) callback();
+                };
+                img.src = dataUrl;
+            }
+
+            fillCanvasWhite();
+
+            function enterEditMode() {
+                if (state.immunitySecondsLeft > 0) return;
+                state.isEditing = true;
+                state.undoStack = [];
+                fillCanvasWhite();
+                saveUndoState();
+
+                emptyCanvasOverlay.classList.add('hidden');
+                canvas.classList.remove('canvas-default', 'canvas-shielded');
+                canvas.classList.add('canvas-editing');
+
+                editingModeNotice.classList.remove('hidden');
+                drawingToolbar.classList.remove('hidden');
+                viewModeControls.classList.add('hidden');
+
+                if (state.currentKing && state.currentKing.imageDataUrl) {
+                    loadPrevArtBtn.classList.remove('hidden');
+                } else {
+                    loadPrevArtBtn.classList.add('hidden');
+                }
+            }
+
+            function exitEditMode(restorePreviousArt = true) {
+                state.isEditing = false;
+                state.isDrawing = false;
+
+                canvas.classList.remove('canvas-editing');
+                if (state.immunitySecondsLeft > 0) {
+                    canvas.classList.add('canvas-shielded');
+                } else {
+                    canvas.classList.add('canvas-default');
+                }
+
+                editingModeNotice.classList.add('hidden');
+                drawingToolbar.classList.add('hidden');
+                viewModeControls.classList.remove('hidden');
+
+                if (restorePreviousArt) {
+                    if (state.currentKing && state.currentKing.imageDataUrl) {
+                        drawImageFromDataUrl(state.currentKing.imageDataUrl);
+                        emptyCanvasOverlay.classList.add('hidden');
+                    } else {
+                        fillCanvasWhite();
+                        emptyCanvasOverlay.classList.remove('hidden');
+                    }
+                }
+            }
+
+            function getCanvasCoords(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+            }
+
+            function startStroke(e) {
+                if (!state.isEditing) return;
+                e.preventDefault();
+                state.isDrawing = true;
+                const pos = getCanvasCoords(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = state.brushSize;
+                ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.brushColor;
+                ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
+                ctx.stroke();
+            }
+
+            function moveStroke(e) {
+                if (!state.isEditing || !state.isDrawing) return;
+                e.preventDefault();
+                const pos = getCanvasCoords(e);
+                ctx.lineWidth = state.brushSize;
+                ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.brushColor;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+
+            function endStroke(e) {
+                if (!state.isEditing || !state.isDrawing) return;
+                e.preventDefault();
+                state.isDrawing = false;
+                ctx.closePath();
+                saveUndoState();
+            }
+
+            canvas.addEventListener('mousedown', startStroke);
+            canvas.addEventListener('mousemove', moveStroke);
+            window.addEventListener('mouseup', endStroke);
+            canvas.addEventListener('touchstart', startStroke, { passive: false });
+            canvas.addEventListener('touchmove', moveStroke, { passive: false });
+            window.addEventListener('touchend', endStroke, { passive: false });
+
+            function setActiveTool(toolName) {
+                state.tool = toolName;
+                if (toolName === 'brush') {
+                    toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
+                    toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition';
+                } else {
+                    toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
+                    toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition';
+                }
+            }
+
+            colorSwatches.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.brushColor = btn.getAttribute('data-color');
+                    setActiveTool('brush');
+                    colorSwatches.forEach(b => {
+                        b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
+                        b.classList.add('border-transparent');
+                    });
+                    btn.classList.remove('border-transparent');
+                    btn.classList.add('border-white', 'ring-2', 'ring-indigo-500');
+                });
+            });
+
+            customColorPicker.addEventListener('input', (e) => {
+                state.brushColor = e.target.value;
+                setActiveTool('brush');
+                colorSwatches.forEach(b => {
+                    b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
+                    b.classList.add('border-transparent');
+                });
+            });
+
+            brushSizeSlider.addEventListener('input', (e) => {
+                state.brushSize = parseInt(e.target.value, 10);
+                brushSizeLabel.textContent = `${state.brushSize}px`;
+            });
+
+            toolBrushBtn.addEventListener('click', () => setActiveTool('brush'));
+            toolEraserBtn.addEventListener('click', () => setActiveTool('eraser'));
+
+            undoBtn.addEventListener('click', () => {
+                if (state.undoStack.length > 1) {
+                    state.undoStack.pop();
+                    drawImageFromDataUrl(state.undoStack[state.undoStack.length - 1]);
+                }
+            });
+
+            loadPrevArtBtn.addEventListener('click', () => {
+                if (state.currentKing && state.currentKing.imageDataUrl) {
+                    drawImageFromDataUrl(state.currentKing.imageDataUrl, () => {
+                        saveUndoState();
+                        showToast('Фон загружен!', 'Теперь можно дорисовать что угодно поверх.');
+                    });
+                }
+            });
+
+            clearCanvasBtn.addEventListener('click', () => {
+                fillCanvasWhite();
+                saveUndoState();
+            });
+
+            startOverrideBtn.addEventListener('click', enterEditMode);
+            cancelEditBtn.addEventListener('click', () => exitEditMode(true));
+
+            openPublishModalBtn.addEventListener('click', () => {
+                const nextPrice = calculateNextPrice(state.currentPrice);
+                modalPriceDisplay.textContent = `${state.currentPrice} ₽`;
+                modalNextPriceDisplay.textContent = `${nextPrice} ₽ (+10%)`;
+                modalSubmitBtnText.textContent = `Оплатить ${state.currentPrice} ₽ и стать Царем Горы`;
+                publishModal.classList.remove('hidden');
+                authorNameInput.focus();
+            });
+
+            closeModalBtn.addEventListener('click', () => publishModal.classList.add('hidden'));
+            publishModal.addEventListener('click', (e) => {
+                if (e.target === publishModal) publishModal.classList.add('hidden');
+            });
+
+            function updateButtonAndShieldState() {
+                if (state.immunitySecondsLeft > 0) {
+                    immunityBox.classList.remove('hidden');
+                    immunityBox.classList.add('flex');
+                    canvasShieldBadge.classList.remove('hidden');
+                    canvas.classList.remove('canvas-default');
+                    canvas.classList.add('canvas-shielded');
+
+                    startOverrideBtn.disabled = true;
+                    overrideBtnIcon.className = 'fa-solid fa-lock';
+                    overrideBtnText.textContent = `Холст под защитой (${formatTime(state.immunitySecondsLeft)}) — След. цена ${state.currentPrice} ₽`;
+                } else {
+                    immunityBox.classList.add('hidden');
+                    immunityBox.classList.remove('flex');
+                    canvasShieldBadge.classList.add('hidden');
+                    canvas.classList.remove('canvas-shielded');
+                    if (!state.isEditing) canvas.classList.add('canvas-default');
+
+                    startOverrideBtn.disabled = false;
+                    overrideBtnIcon.className = 'fa-solid fa-paintbrush';
+                    overrideBtnText.textContent = `Перебить рисунок за ${state.currentPrice} ₽`;
+                }
+            }
+
+            function startImmunityTimer(targetTimestamp) {
+                if (state.immunityInterval) clearInterval(state.immunityInterval);
+
+                function checkTime() {
+                    const now = Date.now();
+                    const diff = Math.floor((targetTimestamp - now) / 1000);
+
+                    if (diff <= 0) {
+                        state.immunitySecondsLeft = 0;
+                        clearInterval(state.immunityInterval);
+                        updateButtonAndShieldState();
+                    } else {
+                        state.immunitySecondsLeft = diff;
+                        immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
+                        updateButtonAndShieldState();
+                    }
+                }
+
+                checkTime();
+                state.immunityInterval = setInterval(checkTime, 1000);
+            }
+
+            skipTimerBtn.addEventListener('click', () => {
+                if (state.immunityInterval) clearInterval(state.immunityInterval);
+                state.immunitySecondsLeft = 0;
+                updateButtonAndShieldState();
+                showToast('Таймер сброшен', 'Щит снят для проверки перебития.');
+            });
+
+            function renderHistory() {
+                historyCountBadge.textContent = state.history.length;
+                historyList.innerHTML = '';
+
+                if (state.history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="text-center py-8 text-slate-500 text-xs">
+                            История пока пуста.<br>Стань первым Царем Горы!
+                        </div>
+                    `;
+                    return;
+                }
+
+                state.history.forEach((item, index) => {
+                    const isCurrent = index === 0;
+                    const card = document.createElement('div');
+                    card.className = `flex items-center gap-3 p-2.5 rounded-xl border transition ${
+                        isCurrent 
+                            ? 'bg-indigo-950/30 border-indigo-500/40' 
+                            : 'bg-slate-800/50 border-slate-800'
+                    }`;
+
+                    const socialHtml = item.social 
+                        ? `<span class="text-[11px] text-indigo-400 truncate block">${item.social}</span>` 
+                        : `<span class="text-[11px] text-slate-500 block">без ссылки</span>`;
+
+                    card.innerHTML = `
+                        <img src="${item.imageDataUrl}" alt="Рисунок" class="w-14 h-10 object-cover bg-white rounded-lg border border-slate-700 shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-bold text-white truncate">${item.name}</span>
+                                ${isCurrent ? '<span class="text-[10px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-semibold">Топ</span>' : ''}
+                            </div>
+                            ${socialHtml}
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="font-display font-bold text-xs text-emerald-400 block">${item.price} ₽</span>
+                            <span class="text-[10px] text-slate-500">${item.timeStr || ''}</span>
+                        </div>
+                    `;
+                    historyList.appendChild(card);
+                });
+            }
+
+            // --- СИНХРОНИЗАЦИЯ С SUPABASE ---
+
+            async function syncFromDatabase() {
+                const { data, error } = await supabaseClient
+                    .from('canvas_history')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(15);
+
+                if (error) {
+                    console.error('Ошибка Supabase:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    state.history = data.map(row => {
+                        const date = new Date(row.created_at);
+                        const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                        return {
+                            name: row.author_name,
+                            social: row.author_link,
+                            price: row.price,
+                            nextPrice: row.next_price,
+                            shieldUntil: row.shield_until,
+                            timeStr: timeStr,
+                            imageDataUrl: row.image_data
+                        };
+                    });
+
+                    state.totalBids = data.length;
+                    statTotalBids.textContent = state.totalBids;
+
+                    const king = state.history[0];
+                    state.currentKing = king;
+                    state.currentPrice = king.nextPrice;
+
+                    headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
+                    kingName.textContent = king.name;
+                    kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
+                    kingPriceBadge.classList.remove('hidden');
+
+                    if (king.social) {
+                        kingSocialWrapper.classList.remove('hidden');
+                        const displaySocial = king.social.startsWith('@') || king.social.includes('/') ? king.social : `@${king.social}`;
+                        kingSocialText.textContent = displaySocial;
+                        
+                        let href = king.social;
+                        if (king.social.startsWith('@')) {
+                            href = `https://t.me/${king.social.substring(1)}`;
+                        } else if (!king.social.startsWith('http')) {
+                            href = `https://${king.social}`;
+                        }
+                        kingSocialLink.href = href;
+                    } else {
+                        kingSocialWrapper.classList.add('hidden');
+                    }
+
+                    if (!state.isEditing) {
+                        drawImageFromDataUrl(king.imageDataUrl);
+                        emptyCanvasOverlay.classList.add('hidden');
+                    }
+
+                    renderHistory();
+
+                    const shieldEnd = new Date(king.shieldUntil).getTime();
+                    startImmunityTimer(shieldEnd);
+                } else {
+                    state.currentPrice = 10;
+                    headerCurrentPrice.textContent = '10 ₽';
+                    renderHistory();
+                    updateButtonAndShieldState();
+                }
+            }
+
+            // --- ОТПРАВКА ДАННЫХ В SUPABASE ПРИ ПУБЛИКАЦИИ ---
+
+            publishForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                submitFormBtn.disabled = true;
+                submitFormBtn.textContent = 'Сохраняем...';
+
+                const name = authorNameInput.value.trim() || 'Анонимный Художник';
+                const rawSocial = authorSocialInput.value.trim();
+                const paidPrice = state.currentPrice;
+                const nextPrice = calculateNextPrice(paidPrice);
+                const imageDataUrl = canvas.toDataURL('image/png');
+                const shieldUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+                const { error } = await supabaseClient
+                    .from('canvas_history')
+                    .insert([{
+                        author_name: name,
+                        author_link: rawSocial,
+                        image_data: imageDataUrl,
+                        price: paidPrice,
+                        next_price: nextPrice,
+                        shield_until: shieldUntil
+                    }]);
+
+                submitFormBtn.disabled = false;
+
+                if (error) {
+                    alert('Ошибка сохранения в базу: ' + error.message);
+                    return;
+                }
+
+                publishModal.classList.add('hidden');
+                exitEditMode(false);
+                emptyCanvasOverlay.classList.add('hidden');
+
+                authorNameInput.value = '';
+                authorSocialInput.value = '';
+
+                showToast('Ты Царь Горы! 👑', `Рисунок сохранен в облако! Новая цена: ${nextPrice} ₽`);
+
+                // Сразу локально подтягиваем обновленные данные
+                await syncFromDatabase();
+            });
+
+            // Слушаем появление новых записей в реальном времени
+            supabaseClient
+                .channel('realtime:canvas_history')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'canvas_history' }, () => {
+                    syncFromDatabase();
+                })
+                .subscribe();
+
+            // Первый запуск загрузки
+            syncFromDatabase();
+
+        })();
+    </script>
+</body>
+</html>
