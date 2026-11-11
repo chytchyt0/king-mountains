@@ -1,29 +1,26 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Царь Холста — Аукцион Рисунков</title>
+    <title>Царь Холста — Битва за Трон</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         display: ['Unbounded', 'sans-serif'],
-                    },
-                    colors: {
-                        pageBg: '#f1f3f5',
-                        panelBg: '#ffffff',
                     }
                 }
             }
@@ -34,49 +31,45 @@
         body {
             background-color: #f1f3f5;
             color: #1e293b;
-            min-height: 100vh;
-            font-family: 'Inter', sans-serif;
             overflow-x: hidden;
         }
 
-        /* Неоновая пульсирующая рамка при рисовании */
-        @keyframes pulseGlowLight {
+        @keyframes pulseGlowEdit {
             0%, 100% {
+                box-shadow: 0 0 25px rgba(99, 102, 241, 0.45), 0 0 50px rgba(168, 85, 247, 0.25);
                 border-color: #6366f1;
-                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 20px 40px -15px rgba(99, 102, 241, 0.25);
             }
             50% {
+                box-shadow: 0 0 40px rgba(236, 72, 153, 0.55), 0 0 80px rgba(99, 102, 241, 0.4);
                 border-color: #ec4899;
-                box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.25), 0 25px 50px -12px rgba(236, 72, 153, 0.35);
             }
         }
 
         .canvas-editing {
-            animation: pulseGlowLight 2s infinite ease-in-out;
-            border-width: 3px !important;
-            cursor: none !important;
+            animation: pulseGlowEdit 2.2s infinite ease-in-out;
+            border-width: 4px !important;
+            cursor: none;
         }
 
-        /* Золотистый щит 10 минут иммунитета */
-        @keyframes shieldGlow {
+        @keyframes shieldPulse {
             0%, 100% {
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.35), 0 0 40px rgba(234, 179, 8, 0.15);
                 border-color: #f59e0b;
-                box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2), 0 20px 35px -10px rgba(245, 158, 11, 0.25);
             }
             50% {
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.6), 0 0 60px rgba(234, 179, 8, 0.3);
                 border-color: #fbbf24;
-                box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.3), 0 25px 45px -8px rgba(245, 158, 11, 0.35);
             }
         }
 
         .canvas-shielded {
-            animation: shieldGlow 2.5s infinite ease-in-out;
-            border-width: 3px !important;
+            animation: shieldPulse 3s infinite ease-in-out;
+            border-width: 4px !important;
         }
 
         .canvas-default {
             border: 2px solid #e2e8f0;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.08), 0 10px 20px -5px rgba(0, 0, 0, 0.04);
         }
 
         #mainCanvas {
@@ -85,195 +78,184 @@
             -webkit-user-select: none;
         }
 
-        /* Точка-курсор кисти с точным размером */
-        #brushCursorCircle {
+        #customBrushDot {
             pointer-events: none;
-            position: fixed;
+            position: absolute;
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            z-index: 100;
-            transition: width 0.06s ease, height 0.06s ease;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.8);
+            z-index: 40;
             display: none;
+            box-shadow: 0 0 4px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.8);
         }
 
         ::-webkit-scrollbar {
-            width: 5px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
             background: #e2e8f0;
         }
         ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
-            border-radius: 4px;
         }
     </style>
 </head>
-<body class="flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- Точка-курсор кисти -->
-    <div id="brushCursorCircle"></div>
-
-    <!-- Верхняя шапка -->
-    <header class="border-b border-slate-200/90 bg-white/80 backdrop-blur-md sticky top-0 z-30">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <!-- Верхний бар -->
+    <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-                    <i class="fa-solid fa-crown text-base"></i>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center shadow-md shadow-orange-500/20">
+                    <i class="fa-solid fa-crown text-white text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-extrabold text-lg tracking-tight text-slate-900 flex items-center gap-2">
+                    <h1 class="font-display font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 flex items-center gap-2">
                         ЦАРЬ ХОЛСТА
                     </h1>
-                    <p class="text-xs text-slate-500 hidden sm:block">Аукцион холста • Оплати ставку, твори 20 минут и держи трон</p>
+                    <p class="text-xs text-slate-500">Вирусный аукцион современного творчества</p>
                 </div>
             </div>
 
-            <!-- Правая часть: Счетчики + Правила + Стоимость выкупа -->
-            <div class="flex items-center gap-2 sm:gap-4">
-                <!-- Счетчик просмотров и онлайна -->
-                <div class="hidden md:flex items-center gap-3 bg-slate-100/90 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-600">
-                    <span class="flex items-center gap-1.5" title="Сейчас на сайте">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Онлайн: <b id="statOnlineCount" class="text-slate-800">1</b></span>
-                    </span>
-                    <span class="h-3 w-[1px] bg-slate-300"></span>
-                    <span class="flex items-center gap-1.5" title="Всего просмотров сайта">
-                        <i class="fa-regular fa-eye text-slate-400"></i>
-                        <span>Просмотров: <b id="statTotalViews" class="text-slate-800">1</b></span>
-                    </span>
+            <!-- Статистика и правила -->
+            <div class="flex items-center gap-3 sm:gap-5">
+                <div class="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
                 </div>
 
-                <button 
-                    type="button" 
-                    id="openRulesBtn" 
-                    class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 transition flex items-center gap-1.5 shadow-sm"
-                >
-                    <i class="fa-regular fa-circle-question text-indigo-600"></i>
+                <div class="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
+                    <i class="fa-regular fa-eye text-slate-500"></i>
+                    <span>Просмотров: <strong id="statViews" class="text-slate-800">1</strong></span>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200/80 rounded-xl px-3.5 py-1.5 flex items-center gap-2">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wider text-amber-800/80 font-bold block">Стоимость выкупа</span>
+                        <span id="headerCurrentPrice" class="font-display font-extrabold text-amber-600 text-base sm:text-lg">10 ₽</span>
+                    </div>
+                </div>
+
+                <button type="button" id="openRulesBtn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info text-indigo-500"></i>
                     <span>Правила</span>
                 </button>
-
-                <div class="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-1.5 flex items-center gap-1.5">
-                    <span class="text-[11px] font-medium text-amber-800 uppercase tracking-wider hidden sm:inline">Стоимость выкупа:</span>
-                    <span id="headerCurrentPrice" class="font-display font-extrabold text-amber-600 text-sm sm:text-base">10 ₽</span>
-                </div>
             </div>
         </div>
     </header>
 
-    <!-- Основной контейнер -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Основной контент -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА (ХОЛСТ ПО ЦЕНТРУ) -->
+        <!-- Центр: Баннер царя + Холст + Управление -->
         <div class="lg:col-span-8 flex flex-col items-center w-full">
             
-            <!-- КАРТОЧКА: ТЕКУЩИЙ ЦАРЬ ХОЛСТА (НАД ХОЛСТОМ) -->
-            <div id="kingCard" class="w-full max-w-[680px] mb-4 bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4 transition-all">
-                <div class="flex items-center gap-3.5 min-w-0">
-                    <div class="relative shrink-0">
-                        <img 
-                            id="kingAvatarImg" 
-                            src="https://placehold.co/100x100/e2e8f0/64748b?text=👑" 
-                            alt="Аватарка" 
-                            class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-amber-400/80 shadow-inner bg-slate-100"
-                        >
-                        <span class="absolute -top-1.5 -right-1.5 bg-amber-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow">
-                            <i class="fa-solid fa-crown"></i>
-                        </span>
-                    </div>
-
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
-                                Царь Холста
-                            </span>
-                            <span id="kingPriceBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                10 ₽
-                            </span>
+            <!-- Карточка Царя Горы -->
+            <div id="kingBanner" class="w-full max-w-[820px] mb-4 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3.5">
+                        <div id="kingAvatarWrapper" class="w-13 h-13 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                            <span id="kingAvatarDefault">👑</span>
+                            <img id="kingAvatarImg" src="" alt="Аватарка" class="w-full h-full object-cover hidden">
                         </div>
-                        <h2 id="kingName" class="font-display font-bold text-base sm:text-lg text-slate-800 truncate mt-0.5">
-                            Никто (холст свободен)
-                        </h2>
-                        <div id="kingSocialWrapper" class="hidden mt-0.5">
-                            <a id="kingSocialLink" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 truncate underline underline-offset-2">
-                                <i class="fa-solid fa-link text-[10px]"></i>
-                                <span id="kingSocialText">@username</span>
-                            </a>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                                    <i class="fa-solid fa-crown text-[10px]"></i> Текущий Царь Холста:
+                                </span>
+                                <span id="kingPriceBadge" class="hidden text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Захватил за 10 ₽
+                                </span>
+                            </div>
+                            <h2 id="kingName" class="font-bold text-base sm:text-lg text-slate-800 mt-0.5">
+                                Никто <span class="text-slate-400 font-normal text-sm">(холст свободен)</span>
+                            </h2>
+                            <div id="kingSocialWrapper" class="hidden mt-0.5">
+                                <a id="kingSocialLink" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 underline underline-offset-2">
+                                    <i class="fa-solid fa-link text-[10px]"></i>
+                                    <span id="kingSocialText">@username</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Блок щита (10 минут иммунитета) -->
-                <div id="immunityBox" class="hidden flex-col items-end bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2">
-                    <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs sm:text-sm">
-                        <i class="fa-solid fa-shield-halved text-amber-500 animate-pulse"></i>
-                        <span>Щит:</span>
-                        <span id="immunityTimerText" class="font-mono font-bold text-amber-600 text-sm sm:text-base">10:00</span>
+                    <!-- Таймер иммунитета (10 минут после публикации) -->
+                    <div id="immunityBox" class="hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">
+                        <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs sm:text-sm">
+                            <i class="fa-solid fa-shield-halved text-amber-600 animate-pulse"></i>
+                            <span>Иммунитет:</span>
+                            <span id="immunityTimerText" class="font-mono font-bold text-amber-700 text-sm sm:text-base">10:00</span>
+                        </div>
+                        <span class="text-[10px] text-amber-600/90 mt-0.5">Холст защищен от перебития</span>
                     </div>
-                    <button id="skipImmunityBtn" type="button" class="mt-1 text-[11px] text-amber-700 hover:text-amber-900 underline decoration-dotted flex items-center gap-1 transition">
-                        <i class="fa-solid fa-forward-fast text-[9px]"></i> Сбросить щит (тест)
-                    </button>
                 </div>
             </div>
 
-            <!-- ТАЙМЕР НА РИСОВАНИЕ (ДЛЯ ХУДОЖНИКА, ОПЛАТИВШЕГО 20 МИНУТ) -->
-            <div id="drawTimerNotice" class="hidden w-full max-w-[680px] mb-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between shadow-sm animate-fade-in">
+            <!-- Бейдж режима рисования -->
+            <div id="editingModeNotice" class="hidden w-full max-w-[820px] mb-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping"></span>
-                    <span class="font-medium">Холст оплачен и забронирован! Время на шедевр:</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+                    <span class="font-semibold">Ты захватил холст! Твори свой шедевр.</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span id="drawTimerText" class="font-mono font-bold text-indigo-700 text-base sm:text-lg">20:00</span>
-                    <span class="text-[11px] text-slate-400 hidden sm:inline">(не закрывайте вкладку)</span>
+                <div class="flex items-center gap-1.5 font-mono text-xs font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="drawingTimerText">20:00</span>
                 </div>
             </div>
 
-            <!-- ОБЕРТКА БОЛЬШОГО ХОЛСТА (800x560) СТРОГО ПО ЦЕНТРУ -->
-            <div class="relative w-full max-w-[680px] aspect-[10/7] flex items-center justify-center">
+            <!-- Обертка Холста -->
+            <div class="relative w-full max-w-[820px] aspect-[3/2] flex items-center justify-center">
+                <!-- Кастомная точка-кисть -->
+                <div id="customBrushDot"></div>
+
                 <canvas 
                     id="mainCanvas" 
-                    width="800" 
-                    height="560" 
-                    class="w-full h-full bg-white rounded-2xl canvas-default transition-all duration-300"
+                    width="960" 
+                    height="640" 
+                    class="w-full h-full bg-white rounded-2xl transition-all duration-300 canvas-default"
                 ></canvas>
 
-                <!-- ОВЕРЛЕЙ 1: ПУСТОЙ ХОЛСТ -->
-                <div id="emptyOverlay" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none">
-                    <div class="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-2.5">
-                        <i class="fa-solid fa-palette text-2xl text-slate-400"></i>
+                <!-- Оверлей пустого холста -->
+                <div id="emptyCanvasOverlay" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-inner">
+                        <i class="fa-solid fa-paintbrush text-2xl"></i>
                     </div>
-                    <p class="font-display font-bold text-slate-700 text-base">Холст чист</p>
-                    <p class="text-slate-500 text-xs sm:text-sm max-w-xs mt-1">
-                        Оплати бронь на 20 минут и нарисуй свой шедевр первым!
+                    <p class="text-slate-600 font-display font-bold text-base sm:text-lg">Холст пока чист</p>
+                    <p class="text-slate-400 text-xs sm:text-sm max-w-xs mt-1">
+                        Нажми «Нарисовать свое» ниже, чтобы забронировать трон и разместить работу!
                     </p>
                 </div>
 
-                <!-- ОВЕРЛЕЙ 2: КТО-ТО УЖЕ РИСУЕТ.. ОЖИДАЙТЕ (БЛОКИРОВКА ДЛЯ ДРУГИХ) -->
-                <div id="busyOverlay" class="hidden absolute inset-0 bg-slate-900/65 backdrop-blur-[4px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-10 transition-all">
-                    <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
-                        <i class="fa-solid fa-paintbrush text-2xl text-amber-300 animate-bounce"></i>
+                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" -->
+                <div id="lockedCanvasOverlay" class="hidden absolute inset-0 bg-slate-900/75 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-20">
+                    <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400 mb-3 animate-bounce">
+                        <i class="fa-solid fa-paint-roller text-2xl"></i>
                     </div>
-                    <h3 class="font-display font-bold text-lg sm:text-xl text-white">Кто-то уже рисует.. ожидайте</h3>
-                    <p class="text-slate-200 text-xs sm:text-sm max-w-sm mt-1">
-                        Холст оплачен и занят другим участником. Оставшееся время аренды:
+                    <h3 class="font-display font-bold text-lg sm:text-xl tracking-tight">Кто-то уже рисует.. ожидайте</h3>
+                    <p class="text-slate-300 text-xs sm:text-sm max-w-sm mt-1.5">
+                        Прямо сейчас художник занял холст и готовит шедевр.
                     </p>
-                    <div class="mt-3 px-4 py-1.5 rounded-full bg-white/20 border border-white/30 font-mono font-bold text-amber-300 text-base sm:text-lg">
-                        <span id="busyTimerText">20:00</span>
+                    <div class="mt-4 px-4 py-1.5 rounded-full bg-white/15 border border-white/20 text-xs font-mono font-semibold flex items-center gap-2">
+                        <i class="fa-regular fa-clock text-amber-400"></i>
+                        <span>Осталось времени на рисование: <strong id="lockedTimerText" class="text-amber-300">20:00</strong></span>
                     </div>
-                    <span class="text-[11px] text-slate-300 mt-2">Как только автор закончит или истечет таймер — холст откроется</span>
                 </div>
 
-                <!-- ОВЕРЛЕЙ 3: ИММУНИТЕТ ХОЛСТА (ЩИТ) -->
-                <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3.5 right-3.5 bg-amber-500 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 z-10">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <span>Иммунитет активен</span>
+                <!-- Плашка защищенного щита -->
+                <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3 right-3 bg-amber-500 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Защищено щитом</span>
                 </div>
             </div>
 
-            <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ РИСОВАНИЯ (ТОЛЬКО ПОСЛЕ ОПЛАТЫ БРОНИ) -->
-            <div id="drawingToolbar" class="hidden w-full max-w-[680px] mt-4 bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-4">
+            <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ -->
+            <div id="drawingToolbar" class="hidden w-full max-w-[820px] mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-4">
                 
-                <!-- Ряд 1: Цвета и Слайдер кисти -->
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <button type="button" data-color="#0f172a" class="color-swatch w-7 h-7 rounded-full bg-slate-900 border-2 border-white ring-2 ring-indigo-500 transition transform hover:scale-110" title="Черный"></button>
@@ -285,465 +267,413 @@
                         <button type="button" data-color="#a855f7" class="color-swatch w-7 h-7 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 transition transform" title="Фиолетовый"></button>
                         <button type="button" data-color="#ec4899" class="color-swatch w-7 h-7 rounded-full bg-pink-500 border-2 border-transparent hover:scale-110 transition transform" title="Розовый"></button>
                         
-                        <label class="relative w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-400 via-pink-500 to-yellow-400 flex items-center justify-center cursor-pointer hover:scale-110 transition transform shadow-sm" title="Пипетка своего цвета">
+                        <label class="relative w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-400 via-pink-500 to-yellow-400 flex items-center justify-center cursor-pointer hover:scale-110 transition transform shadow-sm" title="Выбрать свой цвет">
                             <input type="color" id="customColorPicker" value="#6366f1" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
                             <i class="fa-solid fa-eye-dropper text-[10px] text-white drop-shadow"></i>
                         </label>
                     </div>
 
                     <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                        <span class="text-xs text-slate-500 font-medium">Кисть:</span>
-                        <input id="brushSizeSlider" type="range" min="2" max="50" value="8" class="w-24 accent-indigo-600 cursor-pointer">
+                        <i class="fa-solid fa-circle text-[8px] text-slate-400"></i>
+                        <input id="brushSizeSlider" type="range" min="2" max="45" value="8" class="w-24 accent-indigo-600 cursor-pointer">
                         <span id="brushSizeLabel" class="text-xs font-mono font-bold text-slate-700 w-8 text-right">8px</span>
                     </div>
                 </div>
 
-                <!-- Ряд 2: Кисть, Ластик, Отмена, Очистить, Взять прошлый рисунок за основу -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button type="button" id="toolBrushBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition shadow-sm">
+                        <button type="button" id="toolBrushBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition">
                             <i class="fa-solid fa-paintbrush"></i> Кисть
                         </button>
                         <button type="button" id="toolEraserBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition">
                             <i class="fa-solid fa-eraser"></i> Ластик
                         </button>
-                        <button type="button" id="undoBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition" title="Отменить последнее действие">
+                        <button type="button" id="undoBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition">
                             <i class="fa-solid fa-rotate-left"></i> Шаг назад
                         </button>
-                        <button type="button" id="loadPrevArtBtn" class="hidden px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 flex items-center gap-1.5 transition" title="Взять рисунок прошлого царя за основу">
-                            <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i> Дорисовать поверх прошлого
+                        <button type="button" id="chooseBaseArtBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-images"></i> Взять основу из истории
                         </button>
                     </div>
 
-                    <button type="button" id="clearCanvasBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center gap-1.5 transition">
+                    <button type="button" id="clearCanvasBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-trash-can"></i> Очистить
                     </button>
                 </div>
 
-                <!-- Ряд 3: Финальная кнопка "Опубликовать шедевр" -->
-                <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                    <span class="text-xs text-slate-400">Внимание: отмена не возвращает средства</span>
-                    <button type="button" id="requestPublishBtn" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-600/20 flex items-center gap-2 transition transform active:scale-95">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span>Опубликовать шедевр на холсте</span>
+                <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                    <button type="button" id="openConfirmPublishModalBtn" class="w-full sm:w-auto px-7 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition transform active:scale-95">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Опубликовать шедевр на холст</span>
                     </button>
                 </div>
             </div>
 
-            <!-- ГЛАВНАЯ ЧИСТАЯ КНОПКА: "НАРИСОВАТЬ СВОЕ" -->
-            <div id="viewModeControls" class="w-full max-w-[680px] mt-4 flex flex-col items-center">
+            <!-- ГЛАВНАЯ КНОПКА В РЕЖИМЕ ПРОСМОТРА -->
+            <div id="viewModeControls" class="w-full max-w-[820px] mt-6 flex flex-col items-center">
                 <button 
                     type="button" 
-                    id="startBookingBtn"
-                    class="w-full py-4 px-6 rounded-2xl font-display font-bold text-base sm:text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-3 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                    id="startDrawBookingBtn"
+                    class="w-full sm:w-auto min-w-[280px] py-4 px-10 rounded-2xl font-display font-bold text-base sm:text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-xl shadow-indigo-600/25 flex items-center justify-center gap-3 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                    <i id="bookingBtnIcon" class="fa-solid fa-paintbrush"></i>
-                    <span id="bookingBtnText">Нарисовать свое</span>
+                    <i class="fa-solid fa-paintbrush"></i>
+                    <span>Нарисовать свое</span>
                 </button>
-
-                <p class="text-xs text-slate-400 mt-2 text-center">
-                    Холст бронируется на 20 минут после оплаты • Рисунок защищен щитом на 10 минут
-                </p>
             </div>
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА: ИСТОРИЯ ЗАХВАТОВ С ЛАЙКАМИ И ПРОСМОТРАМИ -->
-        <div class="lg:col-span-4 flex flex-col gap-4 w-full">
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+        <!-- Правая колонка: История Царей Холста -->
+        <div class="lg:col-span-4 flex flex-col gap-5 w-full">
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col shadow-sm">
+                <div class="flex items-center justify-between mb-3">
                     <h3 class="font-display font-bold text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> История захватов
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> История захватов
                     </h3>
-                    <span id="historyCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-semibold">0</span>
+                    <span id="historyCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-bold">0</span>
                 </div>
+                <p class="text-xs text-slate-400 mb-3">Кликни на карточку, чтобы посмотреть рисунок и поставить лайк</p>
 
-                <div id="historyList" class="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+                <div id="historyList" class="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                     <div id="emptyHistoryText" class="text-center py-10 text-slate-400 text-xs">
-                        Холст еще никто не перебивал.<br>Стань первым Царем Холста!
+                        История пока пуста.<br>Стань первым Царем Холста!
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО 1: ОПЛАТА И БРОНИРОВАНИЕ ХОЛСТА НА 20 МИНУТ -->
-    <div id="paymentBookingModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
-            <button type="button" id="closePaymentModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+    <!-- МОДАЛЬНОЕ ОКНО ПРАВИЛ -->
+    <div id="rulesModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800">
+            <button type="button" id="closeRulesModalBtn" class="absolute top-5 right-5 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-2xl shadow-sm">
+                    👑
+                </div>
+                <div>
+                    <h3 class="font-display font-extrabold text-lg text-slate-900">Правила «Царя Холста»</h3>
+                    <p class="text-xs text-slate-500">Как устроен аукцион и битва за внимание</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-slate-600">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
+                    <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">1</span>
+                    <div>
+                        <strong class="text-slate-800 block">Оплата перед рисованием:</strong>
+                        Чтобы открыть холст, нужно сделать ставку. После оплаты холст блокируется для всех остальных ровно на <strong>20 минут</strong>.
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
+                    <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">2</span>
+                    <div>
+                        <strong class="text-slate-800 block">Аукцион ставок (+15% до +50%):</strong>
+                        Ты можешь выбрать автоматическую ставку (+15% к цене прошлого царя) или задать свою, но не выше +50%.
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
+                    <span class="w-6 h-6 rounded-lg bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">3</span>
+                    <div>
+                        <strong class="text-slate-800 block">Иммунитет на 10 минут:</strong>
+                        После публикации твой рисунок, имя, фото и ссылка гарантированно висят в топе минимум 10 минут без права перебития.
+                    </div>
+                </div>
+
+                <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800">
+                    <strong class="block mb-1 flex items-center gap-1.5 text-rose-700">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Важное предупреждение:
+                    </strong>
+                    Опубликованный рисунок навсегда остается в истории сайта и удалению не подлежит. В случае закрытия вкладки или истечения 20 минут средства не возвращаются.
+                </div>
+            </div>
+
+            <button type="button" id="confirmRulesBtn" class="mt-6 w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition">
+                Всё понятно, закрыть
+            </button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ОПЛАТЫ И БРОНИРОВАНИЯ ХОЛСТА -->
+    <div id="bookingModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800">
+            <button type="button" id="closeBookingModalBtn" class="absolute top-5 right-5 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-xl">
-                    <i class="fa-solid fa-receipt"></i>
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600 text-2xl">
+                    👑
                 </div>
                 <div>
-                    <h3 class="font-display font-bold text-lg text-slate-900">Бронирование Холста</h3>
-                    <p class="text-xs text-slate-500">Оплати ставку и получи 20 минут в редакторе</p>
+                    <h3 class="font-display font-extrabold text-lg text-slate-900">Бронирование Холста</h3>
+                    <p class="text-xs text-slate-500">Займи трон и получи 20 минут на творчество</p>
                 </div>
             </div>
 
-            <!-- ЖЕЛТЫЙ БЛОК ВАЖНЫХ ПРЕДУПРЕЖДЕНИЙ -->
-            <div class="mb-4 p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1.5 leading-relaxed">
-                <div class="font-bold flex items-center gap-1.5 text-amber-800">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>Важные правила бронирования:</span>
-                </div>
-                <p>• Чтобы открыть редактор, необходимо оплатить ставку и <b>забронировать холст на 20 минут</b>.</p>
-                <p>• В случае отмены, закрытия вкладки или истечения времени (20 минут) — <b>деньги не возвращаются!</b></p>
-                <p>• Опубликованный рисунок <b>удалить нельзя</b> (он навсегда остается в открытой истории).</p>
-            </div>
-
-            <form id="paymentBookingForm" class="space-y-4">
-                <!-- Имя / Бренд -->
+            <form id="bookingForm" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Твое имя или название проекта *
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                        Твое имя или проект *
                     </label>
                     <input 
                         type="text" 
-                        id="bookingAuthorName" 
+                        id="authorNameInput" 
                         required 
-                        maxlength="36"
-                        placeholder="Например: Артём | Бренд одежды"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white"
+                        maxlength="32"
+                        placeholder="Например: Влад | Автор канала"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
                     >
                 </div>
 
-                <!-- Фото / Аватарка -->
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Твое фото / аватарка (по желанию)
-                    </label>
-                    <div class="flex items-center gap-3">
-                        <img 
-                            id="bookingAvatarPreview" 
-                            src="https://placehold.co/80x80/e2e8f0/64748b?text=Фото" 
-                            alt="Превью" 
-                            class="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-100 shrink-0 shadow-sm"
-                        >
-                        <div class="flex-1">
-                            <input 
-                                type="file" 
-                                id="bookingAvatarFile" 
-                                accept="image/*"
-                                class="w-full text-xs text-slate-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
-                            >
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ссылка на соцсеть -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Ссылка на соцсеть / Telegram (по желанию)
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                        Ссылка на соцсеть / проект (по желанию)
                     </label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-sm">
-                            <i class="fa-solid fa-link"></i>
+                            <i class="fa-solid fa-at"></i>
                         </span>
                         <input 
                             type="text" 
-                            id="bookingAuthorSocial" 
-                            maxlength="70"
-                            placeholder="t.me/my_channel или @username"
-                            class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white"
+                            id="authorSocialInput" 
+                            maxlength="60"
+                            placeholder="username или t.me/my_channel"
+                            class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
                         >
                     </div>
                 </div>
 
-                <!-- ВЫБОР СТАВКИ: АВТОМАТИЧЕСКАЯ (+15%) ИЛИ СВОЯ (ОТ +15% ДО +50%) -->
-                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                    <span class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                        Выбор ставки выкупа
-                    </span>
-
-                    <div class="space-y-2">
-                        <!-- Автоматическая ставка (+15%) -->
-                        <label class="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-indigo-400 transition" id="labelPriceAuto">
-                            <div class="flex items-center gap-2">
-                                <input type="radio" name="priceOption" value="auto" checked class="accent-indigo-600">
-                                <div>
-                                    <span class="text-xs font-bold text-slate-800 block">Автоматическая ставка</span>
-                                    <span class="text-[11px] text-slate-500">+15% к предыдущей цене</span>
-                                </div>
-                            </div>
-                            <span id="bookingAutoPriceBadge" class="font-display font-bold text-sm text-emerald-600">12 ₽</span>
-                        </label>
-
-                        <!-- Своя ставка (+15%..+50%) -->
-                        <label class="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-indigo-400 transition" id="labelPriceCustom">
-                            <div class="flex items-center gap-2">
-                                <input type="radio" name="priceOption" value="custom" class="accent-indigo-600">
-                                <div>
-                                    <span class="text-xs font-bold text-slate-800 block">Задать свою цену</span>
-                                    <span class="text-[11px] text-slate-500">От +15% до +50% от текущей</span>
-                                </div>
-                            </div>
-                            <i class="fa-solid fa-arrow-trend-up text-indigo-500 text-sm"></i>
-                        </label>
-                    </div>
-
-                    <!-- Инпут для своей цены -->
-                    <div id="bookingCustomInputWrapper" class="hidden pt-1">
-                        <div class="relative">
-                            <input 
-                                type="number" 
-                                id="bookingCustomPriceInput" 
-                                placeholder="Сумма ставки" 
-                                class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-semibold focus:outline-none focus:border-indigo-600"
-                            >
-                            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs text-slate-400 font-bold">₽</span>
+                <!-- Загрузка фото/аватарки -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                        Твоя аватарка или логотип (по желанию)
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <div id="bookingAvatarPreview" class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-400 text-xl shrink-0">
+                            <i class="fa-regular fa-image"></i>
                         </div>
-                        <p id="bookingCustomPriceHint" class="text-[11px] text-slate-500 mt-1">
-                            Диапазон: от <span id="hintMinPrice">12</span> до <span id="hintMaxPrice">15</span> ₽
-                        </p>
-                        <p id="bookingCustomPriceError" class="text-[11px] text-rose-600 font-medium mt-1 hidden"></p>
+                        <label class="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-2">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Выбрать фото</span>
+                            <input type="file" id="authorAvatarInput" accept="image/*" class="hidden">
+                        </label>
                     </div>
                 </div>
 
-                <!-- Кнопка подтверждения и перехода к рисованию -->
+                <!-- Выбор ставки (Авто +15% или Своя до +50%) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
+                    <span class="text-xs font-bold text-slate-700 block">Выбор ставки аукциона:</span>
+                    
+                    <label class="flex items-center justify-between p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <input type="radio" name="priceOption" id="priceOptionAuto" value="auto" checked class="accent-indigo-600">
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block">Автоматическая ставка (+15%)</span>
+                                <span class="text-[11px] text-slate-500">Рекомендуемый шаг аукциона</span>
+                            </div>
+                        </div>
+                        <span id="priceAutoDisplay" class="font-display font-extrabold text-indigo-700 text-sm">12 ₽</span>
+                    </label>
+
+                    <label class="flex flex-col p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <input type="radio" name="priceOption" id="priceOptionCustom" value="custom" class="accent-indigo-600">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-800 block">Задать свою цену</span>
+                                    <span class="text-[11px] text-slate-500">От +15% до максимум +50%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="customPriceInputBox" class="hidden mt-2.5 pt-2 border-t border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    id="customPriceInput" 
+                                    placeholder="Сумма в рублях" 
+                                    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold"
+                                >
+                                <span class="text-sm font-bold text-slate-600">₽</span>
+                            </div>
+                            <span id="customPriceRangeHint" class="text-[10px] text-slate-400 mt-1 block"></span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Предупреждение -->
+                <div class="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-900 text-xs">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i>
+                    После оплаты откроется редактор на <strong>20 минут</strong>. Если ты закроешь вкладку или выйдет время — деньги не возвращаются.
+                </div>
+
                 <button 
                     type="submit" 
                     id="submitBookingBtn"
-                    class="w-full py-3.5 px-5 rounded-xl font-display font-bold text-sm sm:text-base bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition transform active:scale-95 disabled:opacity-50"
+                    class="w-full py-3.5 px-5 rounded-2xl font-display font-bold text-sm sm:text-base bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 hover:from-amber-400 hover:via-orange-400 hover:to-pink-400 text-white shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition transform active:scale-95 disabled:opacity-50"
                 >
-                    <i class="fa-solid fa-credit-card"></i>
-                    <span id="submitBookingBtnText">Оплатить 12 ₽ и начать творить (20 мин)</span>
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span id="submitBookingBtnText">Оплатить 12 ₽ и открыть редактор</span>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО 2: ПОДТВЕРЖДЕНИЕ ПУБЛИКАЦИИ ("ВЫ УВЕРЕНЫ?") -->
-    <div id="confirmPublishModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative text-center">
-            <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-2xl flex items-center justify-center mx-auto mb-3">
+    <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПУБЛИКАЦИИ: "ВЫ УВЕРЕНЫ?" -->
+    <div id="confirmPublishModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
             </div>
-            <h3 class="font-display font-bold text-base sm:text-lg text-slate-900">Вы уверены?</h3>
-            <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                После публикации рисунок сразу появится на холсте и навсегда сохранится в истории битвы. <b>Изменить или удалить его будет нельзя.</b>
+            <h3 class="font-display font-extrabold text-xl text-slate-900">Вы уверены в публикации?</h3>
+            <p class="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
+                Рисунок закрепится на холсте под защитой на <strong>10 минут</strong>. Обратите внимание: опубликованный рисунок навсегда сохранится на сайте и <strong>удалить его будет нельзя</strong>.
             </p>
-            <div class="flex items-center gap-3 mt-5">
-                <button type="button" id="cancelConfirmPublishBtn" class="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-                    Дорисовать еще
+
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                <button type="button" id="cancelConfirmPublishBtn" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+                    Вернуться к рисованию
                 </button>
-                <button type="button" id="finalPublishCommitBtn" class="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm">
+                <button type="button" id="finalPublishBtn" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-emerald-600/20">
                     Да, опубликовать!
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО 3: ПРОСМОТР РАБОТЫ ИЗ ИСТОРИИ (С ЛАЙКАМИ И ПРОСМОТРАМИ) -->
-    <div id="artViewModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button type="button" id="closeArtViewBtn" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+    <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОСМОТРА РИСУНКА ИЗ ИСТОРИИ -->
+    <div id="viewArtModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative animate-fade-in text-slate-800 flex flex-col max-h-[92vh]">
+            <button type="button" id="closeViewArtModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <!-- Автор -->
-            <div class="flex items-center gap-3 mb-4">
-                <img id="viewAuthorAvatar" src="" alt="Аватарка" class="w-12 h-12 rounded-xl object-cover bg-slate-100 border border-slate-200">
+            <!-- Автор работы -->
+            <div class="flex items-center gap-3.5 mb-3.5">
+                <div id="viewArtAvatar" class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0">
+                    👑
+                </div>
                 <div>
-                    <h3 id="viewAuthorName" class="font-display font-bold text-base text-slate-900"></h3>
-                    <div id="viewAuthorSocialWrap" class="mt-0.5">
-                        <a id="viewAuthorSocialLink" href="#" target="_blank" class="text-xs text-indigo-600 font-semibold underline underline-offset-2"></a>
+                    <h4 id="viewArtAuthorName" class="font-display font-bold text-base text-slate-900">Имя Автора</h4>
+                    <a id="viewArtAuthorLink" href="#" target="_blank" class="text-xs text-indigo-600 hover:underline">@link</a>
+                </div>
+                <div class="ml-auto text-right mr-8">
+                    <span id="viewArtPrice" class="font-display font-extrabold text-emerald-600 text-sm sm:text-base block">10 ₽</span>
+                    <span id="viewArtTime" class="text-[11px] text-slate-400">12:00</span>
+                </div>
+            </div>
+
+            <!-- Изображение -->
+            <div class="relative w-full aspect-[3/2] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                <img id="viewArtImage" src="" alt="Рисунок автора" class="w-full h-full object-contain">
+            </div>
+
+            <!-- Лайки и просмотры -->
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div class="flex items-center gap-4">
+                    <button type="button" id="likeArtBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center gap-2 transition active:scale-95">
+                        <i id="likeArtIcon" class="fa-regular fa-heart text-sm"></i>
+                        <span id="likeArtCount">0</span>
+                    </button>
+                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-regular fa-eye"></i>
+                        <span id="viewArtViewsCount">1</span> просмотров
                     </div>
                 </div>
-            </div>
 
-            <!-- Само изображение -->
-            <div class="rounded-xl overflow-hidden border border-slate-200 bg-white mb-4 aspect-[10/7]">
-                <img id="viewArtworkImg" src="" alt="Рисунок" class="w-full h-full object-contain bg-white">
+                <button type="button" id="useAsBaseFromModalBtn" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-2 transition">
+                    <i class="fa-solid fa-paintbrush"></i>
+                    <span>Использовать как основу для нового рисунка</span>
+                </button>
             </div>
-
-            <!-- Метрики (Цена, Дата, Просмотры, Интерактивный лайк) -->
-            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3 text-xs sm:text-sm">
-                <div>
-                    <span class="text-slate-500 block text-[11px]">Выкуплено за:</span>
-                    <b id="viewArtworkPrice" class="font-display text-emerald-600 text-sm sm:text-base"></b>
-                </div>
-                <div>
-                    <span class="text-slate-500 block text-[11px]">Просмотры:</span>
-                    <span class="font-mono font-bold text-slate-700 flex items-center gap-1">
-                        <i class="fa-regular fa-eye text-slate-400"></i>
-                        <span id="viewArtworkViewsCount">0</span>
-                    </span>
-                </div>
-                <div>
-                    <button type="button" id="likeArtworkBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition">
-                        <i id="likeHeartIcon" class="fa-regular fa-heart"></i>
-                        <span id="viewArtworkLikesCount">0</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="text-[11px] text-slate-400 text-center mb-4">
-                🛡️ Рисунок зафиксирован в истории навсегда и удалению не подлежит
-            </div>
-
-            <button type="button" id="useAsBaseBtn" class="w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span>Использовать как основу для нового рисунка</span>
-            </button>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО 4: ПРАВИЛА -->
-    <div id="rulesModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-fade-in">
-            <button type="button" id="closeRulesBtn" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОСНОВЫ ВО ВРЕМЯ РИСОВАНИЯ -->
+    <div id="chooseBaseModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl relative animate-fade-in text-slate-800 flex flex-col max-h-[85vh]">
+            <button type="button" id="closeChooseBaseModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
             </button>
+            <h3 class="font-display font-bold text-base text-slate-900 mb-1">Выбери рисунок из истории</h3>
+            <p class="text-xs text-slate-400 mb-4">Он загрузится на холст как фон, и ты сможешь рисовать поверх него</p>
 
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 text-lg">
-                    <i class="fa-solid fa-scroll"></i>
-                </div>
-                <div>
-                    <h3 class="font-display font-bold text-lg text-slate-900">Правила «Царя Холста»</h3>
-                    <p class="text-xs text-slate-500">Аукцион, аренда и правила размещения</p>
-                </div>
-            </div>
-
-            <div class="space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
-                    <span><b>Оплата перед стартом:</b> чтобы начать рисовать, участник выбирает ставку и оплачивает бронь. Холст блокируется для всех остальных зрителей на 20 минут.</span>
-                </div>
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
-                    <span><b>Сгорание брони:</b> на создание рисунка дается ровно 20 минут. При закрытии вкладки или истечении таймера средства не возвращаются.</span>
-                </div>
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
-                    <span><b>Иммунитет 10 минут:</b> после нажатия «Опубликовать» твой рисунок становится Царем Холста и гарантированно защищен от перебития на 10 минут.</span>
-                </div>
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</span>
-                    <span><b>Вечная история:</b> опубликованный рисунок навсегда остается в галерее, где зрители могут ставить ему лайки и просматривать контакты автора. Удалить работу нельзя.</span>
-                </div>
-            </div>
-
-            <button type="button" id="confirmRulesBtn" class="mt-5 w-full py-3 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-sm">
-                Понятно, готов участвовать!
-            </button>
+            <div id="baseArtGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1"></div>
         </div>
     </div>
 
-    <!-- ТОСТ-УВЕДОМЛЕНИЕ -->
-    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3">
-        <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-check"></i>
-        </div>
-        <div>
-            <p id="toastTitle" class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Успешно</p>
-            <p id="toastMessage" class="text-xs text-slate-200">Действие выполнено</p>
-        </div>
-    </div>
-
-    <!-- Футер -->
-    <footer class="border-t border-slate-200/80 py-4 text-center text-xs text-slate-500 mt-8">
-        Царь Холста • Рисуй, пиарься, держи оборону • Все опубликованные работы навсегда в истории битвы
+    <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400 mt-8">
+        Царь Холста • Независимый арт-аукцион • Рисуй, владей троном, побеждай
     </footer>
 
-    <!-- ОСНОВНОЙ СКРИПТ -->
+    <!-- JS ЛОГИКА + SUPABASE -->
     <script>
         (function() {
-            // ========================================================
-            // БАЗА ДАННЫХ SUPABASE (Опционально)
-            // ========================================================
+            // Подключение к твоей базе данных
             const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
             const SUPABASE_KEY = 'sb_publishable_Goz2iCXq20ySsctUBX1MWg_5ZpD7eVQ';
-            let supabaseClient = null;
+            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            try {
-                if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('ТВОЙ')) {
-                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                }
-            } catch (err) {
-                console.warn('Демо-режим без внешнего Supabase:', err);
-            }
-
-            // ========================================================
-            // СОСТОЯНИЕ (STATE)
-            // ========================================================
             const state = {
                 currentPrice: 10,
-                autoNextPrice: 12, // +15% от 10 = 11.5 -> 12
-                maxAllowedPrice: 15, // +50% от 10 = 15
-                
-                // Сессия рисования (20 минут)
-                isDrawingActive: false,
-                isCanvasBusyByOther: false,
-                drawSecondsLeft: 1200, // 20 минут = 1200 секунд
-                drawTimerInterval: null,
-                
-                // Данные оплатившего автора
-                currentSessionAuthor: null, // { name, social, avatarBase64, paidPrice }
-                
-                // Текущий царь и история
+                autoNextPrice: 12,
+                customMinPrice: 12,
+                customMaxPrice: 15,
+                selectedPrice: 12,
+
+                // Данные забронировавшего
+                bookingData: null,
+                isMyTurnDrawing: false,
+                someoneElseDrawing: false,
+
+                // Таймеры
+                drawingSecondsLeft: 1200, // 20 мин
+                drawingInterval: null,
+                immunitySecondsLeft: 0,
+                immunityInterval: null,
+
                 currentKing: null,
                 history: [],
-                
+                currentlyViewedArt: null,
+
                 // Инструменты
                 brushColor: '#0f172a',
                 brushSize: 8,
                 tool: 'brush',
-                isPaintingStroke: false,
-                undoStack: [],
-                temporaryUploadedAvatar: null,
-                selectedTemplateImage: null, // Если выбрал основу из истории
-                
-                // Щит 10 минут после публикации
-                immunitySecondsLeft: 0,
-                immunityInterval: null,
-                
-                // Просмотр работы в модалке
-                viewingItemIndex: null,
-                likedItems: new Set()
+                isDrawing: false,
+                undoStack: []
             };
 
-            // ========================================================
-            // DOM ЭЛЕМЕНТЫ
-            // ========================================================
             const canvas = document.getElementById('mainCanvas');
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            const brushCursorCircle = document.getElementById('brushCursorCircle');
-
-            // Оверлеи
-            const emptyOverlay = document.getElementById('emptyOverlay');
-            const busyOverlay = document.getElementById('busyOverlay');
-            const busyTimerText = document.getElementById('busyTimerText');
+            const customBrushDot = document.getElementById('customBrushDot');
+            const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
+            const lockedCanvasOverlay = document.getElementById('lockedCanvasOverlay');
+            const lockedTimerText = document.getElementById('lockedTimerText');
             const canvasShieldBadge = document.getElementById('canvasShieldBadge');
+            const editingModeNotice = document.getElementById('editingModeNotice');
+            const drawingTimerText = document.getElementById('drawingTimerText');
 
-            // Шапка и карточка царя
-            const statOnlineCount = document.getElementById('statOnlineCount');
-            const statTotalViews = document.getElementById('statTotalViews');
             const headerCurrentPrice = document.getElementById('headerCurrentPrice');
-            const kingAvatarImg = document.getElementById('kingAvatarImg');
             const kingName = document.getElementById('kingName');
             const kingPriceBadge = document.getElementById('kingPriceBadge');
             const kingSocialWrapper = document.getElementById('kingSocialWrapper');
             const kingSocialLink = document.getElementById('kingSocialLink');
             const kingSocialText = document.getElementById('kingSocialText');
+            const kingAvatarDefault = document.getElementById('kingAvatarDefault');
+            const kingAvatarImg = document.getElementById('kingAvatarImg');
+
             const immunityBox = document.getElementById('immunityBox');
             const immunityTimerText = document.getElementById('immunityTimerText');
-            const skipImmunityBtn = document.getElementById('skipImmunityBtn');
 
-            // Управление бронью и рисованием
-            const drawTimerNotice = document.getElementById('drawTimerNotice');
-            const drawTimerText = document.getElementById('drawTimerText');
             const drawingToolbar = document.getElementById('drawingToolbar');
             const viewModeControls = document.getElementById('viewModeControls');
-            const startBookingBtn = document.getElementById('startBookingBtn');
-            const bookingBtnText = document.getElementById('bookingBtnText');
-            const bookingBtnIcon = document.getElementById('bookingBtnIcon');
-            const requestPublishBtn = document.getElementById('requestPublishBtn');
+            const startDrawBookingBtn = document.getElementById('startDrawBookingBtn');
 
-            // Инструменты
             const colorSwatches = document.querySelectorAll('.color-swatch');
             const customColorPicker = document.getElementById('customColorPicker');
             const brushSizeSlider = document.getElementById('brushSizeSlider');
@@ -751,71 +681,67 @@
             const toolBrushBtn = document.getElementById('toolBrushBtn');
             const toolEraserBtn = document.getElementById('toolEraserBtn');
             const undoBtn = document.getElementById('undoBtn');
-            const loadPrevArtBtn = document.getElementById('loadPrevArtBtn');
+            const chooseBaseArtBtn = document.getElementById('chooseBaseArtBtn');
             const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+            const openConfirmPublishModalBtn = document.getElementById('openConfirmPublishModalBtn');
 
-            // Модалка бронирования
-            const paymentBookingModal = document.getElementById('paymentBookingModal');
-            const closePaymentModalBtn = document.getElementById('closePaymentModalBtn');
-            const paymentBookingForm = document.getElementById('paymentBookingForm');
-            const bookingAuthorName = document.getElementById('bookingAuthorName');
-            const bookingAuthorSocial = document.getElementById('bookingAuthorSocial');
-            const bookingAvatarFile = document.getElementById('bookingAvatarFile');
+            const rulesModal = document.getElementById('rulesModal');
+            const openRulesBtn = document.getElementById('openRulesBtn');
+            const closeRulesModalBtn = document.getElementById('closeRulesModalBtn');
+            const confirmRulesBtn = document.getElementById('confirmRulesBtn');
+
+            const bookingModal = document.getElementById('bookingModal');
+            const closeBookingModalBtn = document.getElementById('closeBookingModalBtn');
+            const bookingForm = document.getElementById('bookingForm');
+            const authorNameInput = document.getElementById('authorNameInput');
+            const authorSocialInput = document.getElementById('authorSocialInput');
+            const authorAvatarInput = document.getElementById('authorAvatarInput');
             const bookingAvatarPreview = document.getElementById('bookingAvatarPreview');
-            const bookingAutoPriceBadge = document.getElementById('bookingAutoPriceBadge');
-            const bookingCustomInputWrapper = document.getElementById('bookingCustomInputWrapper');
-            const bookingCustomPriceInput = document.getElementById('bookingCustomPriceInput');
-            const hintMinPrice = document.getElementById('hintMinPrice');
-            const hintMaxPrice = document.getElementById('hintMaxPrice');
-            const bookingCustomPriceError = document.getElementById('bookingCustomPriceError');
+            const priceOptionAuto = document.getElementById('priceOptionAuto');
+            const priceOptionCustom = document.getElementById('priceOptionCustom');
+            const priceAutoDisplay = document.getElementById('priceAutoDisplay');
+            const customPriceInputBox = document.getElementById('customPriceInputBox');
+            const customPriceInput = document.getElementById('customPriceInput');
+            const customPriceRangeHint = document.getElementById('customPriceRangeHint');
             const submitBookingBtnText = document.getElementById('submitBookingBtnText');
             const submitBookingBtn = document.getElementById('submitBookingBtn');
 
-            // Модалка подтверждения публикации
             const confirmPublishModal = document.getElementById('confirmPublishModal');
             const cancelConfirmPublishBtn = document.getElementById('cancelConfirmPublishBtn');
-            const finalPublishCommitBtn = document.getElementById('finalPublishCommitBtn');
+            const finalPublishBtn = document.getElementById('finalPublishBtn');
 
-            // Модалка просмотра работы из истории
-            const artViewModal = document.getElementById('artViewModal');
-            const closeArtViewBtn = document.getElementById('closeArtViewBtn');
-            const viewAuthorAvatar = document.getElementById('viewAuthorAvatar');
-            const viewAuthorName = document.getElementById('viewAuthorName');
-            const viewAuthorSocialWrap = document.getElementById('viewAuthorSocialWrap');
-            const viewAuthorSocialLink = document.getElementById('viewAuthorSocialLink');
-            const viewArtworkImg = document.getElementById('viewArtworkImg');
-            const viewArtworkPrice = document.getElementById('viewArtworkPrice');
-            const viewArtworkViewsCount = document.getElementById('viewArtworkViewsCount');
-            const likeArtworkBtn = document.getElementById('likeArtworkBtn');
-            const likeHeartIcon = document.getElementById('likeHeartIcon');
-            const viewArtworkLikesCount = document.getElementById('viewArtworkLikesCount');
-            const useAsBaseBtn = document.getElementById('useAsBaseBtn');
+            const viewArtModal = document.getElementById('viewArtModal');
+            const closeViewArtModalBtn = document.getElementById('closeViewArtModalBtn');
+            const viewArtAvatar = document.getElementById('viewArtAvatar');
+            const viewArtAuthorName = document.getElementById('viewArtAuthorName');
+            const viewArtAuthorLink = document.getElementById('viewArtAuthorLink');
+            const viewArtPrice = document.getElementById('viewArtPrice');
+            const viewArtTime = document.getElementById('viewArtTime');
+            const viewArtImage = document.getElementById('viewArtImage');
+            const likeArtBtn = document.getElementById('likeArtBtn');
+            const likeArtIcon = document.getElementById('likeArtIcon');
+            const likeArtCount = document.getElementById('likeArtCount');
+            const viewArtViewsCount = document.getElementById('viewArtViewsCount');
+            const useAsBaseFromModalBtn = document.getElementById('useAsBaseFromModalBtn');
 
-            // Модалка Правил
-            const openRulesBtn = document.getElementById('openRulesBtn');
-            const rulesModal = document.getElementById('rulesModal');
-            const closeRulesBtn = document.getElementById('closeRulesBtn');
-            const confirmRulesBtn = document.getElementById('confirmRulesBtn');
+            const chooseBaseModal = document.getElementById('chooseBaseModal');
+            const closeChooseBaseModalBtn = document.getElementById('closeChooseBaseModalBtn');
+            const baseArtGrid = document.getElementById('baseArtGrid');
 
-            // История и Тост
             const historyList = document.getElementById('historyList');
             const historyCountBadge = document.getElementById('historyCountBadge');
-            const toastNotification = document.getElementById('toastNotification');
-            const toastTitle = document.getElementById('toastTitle');
-            const toastMessage = document.getElementById('toastMessage');
+            const emptyHistoryText = document.getElementById('emptyHistoryText');
 
-            // ========================================================
-            // ВСПОМОГАТЕЛЬНЫЕ РАСЧЕТЫ
-            // ========================================================
+            let uploadedAvatarBase64 = null;
 
-            // Авто-цена: +15% (мин +1 рубль)
-            function calcAutoPrice(current) {
-                return Math.max(Math.ceil(current * 1.15), current + 1);
-            }
-
-            // Макс. цена: +50%
-            function calcMaxPrice(current) {
-                return Math.ceil(current * 1.50);
+            function calculateAuctionPrices(basePrice) {
+                const autoPrice = Math.max(Math.ceil(basePrice * 1.15), basePrice + 2);
+                const maxPrice = Math.ceil(basePrice * 1.50);
+                return {
+                    autoPrice,
+                    minCustom: autoPrice,
+                    maxCustom: Math.max(maxPrice, autoPrice)
+                };
             }
 
             function formatTime(sec) {
@@ -824,22 +750,13 @@
                 return `${m}:${s}`;
             }
 
-            function showToast(title, msg) {
-                toastTitle.textContent = title;
-                toastMessage.textContent = msg;
-                toastNotification.classList.remove('translate-y-24', 'opacity-0');
-                setTimeout(() => {
-                    toastNotification.classList.add('translate-y-24', 'opacity-0');
-                }, 3500);
-            }
-
             function fillCanvasWhite() {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
             function saveUndoState() {
-                if (state.undoStack.length >= 20) state.undoStack.shift();
+                if (state.undoStack.length >= 25) state.undoStack.shift();
                 state.undoStack.push(canvas.toDataURL('image/png'));
             }
 
@@ -855,307 +772,55 @@
 
             fillCanvasWhite();
 
-            // Проверка: открыто ли какое-либо модальное окно
-            function areModalsOpen() {
-                return (
-                    !paymentBookingModal.classList.contains('hidden') ||
-                    !confirmPublishModal.classList.contains('hidden') ||
-                    !artViewModal.classList.contains('hidden') ||
-                    !rulesModal.classList.contains('hidden')
-                );
+            function checkAnyModalOpen() {
+                return !rulesModal.classList.contains('hidden') ||
+                       !bookingModal.classList.contains('hidden') ||
+                       !confirmPublishModal.classList.contains('hidden') ||
+                       !viewArtModal.classList.contains('hidden') ||
+                       !chooseBaseModal.classList.contains('hidden');
             }
 
-            // ========================================================
-            // СЧЕТЧИКИ ОНЛАЙНА И ПРОСМОТРОВ
-            // ========================================================
-            function initSiteStats() {
-                // Просмотры сайта
-                let views = parseInt(localStorage.getItem('king_canvas_views') || '142', 10);
-                views += 1;
-                localStorage.setItem('king_canvas_views', views);
-                statTotalViews.textContent = views.toLocaleString('ru-RU');
-
-                // Онлайн (живая пульсация 2..6 человек)
-                let baseOnline = 3;
-                statOnlineCount.textContent = baseOnline;
-                setInterval(() => {
-                    const delta = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
-                    baseOnline = Math.max(2, Math.min(7, baseOnline + delta));
-                    statOnlineCount.textContent = baseOnline;
-                }, 6000);
-            }
-            initSiteStats();
-
-            // ========================================================
-            // КУРСОР-ТОЧКА КИСТИ (СТРОГО СКРЫВАЕТСЯ ПРИ МОДАЛКАХ)
-            // ========================================================
-            function updateBrushCursorVisual() {
-                const rect = canvas.getBoundingClientRect();
-                const scale = rect.width / canvas.width;
-                const visualSize = Math.max(state.brushSize * scale, 4);
-
-                brushCursorCircle.style.width = `${visualSize}px`;
-                brushCursorCircle.style.height = `${visualSize}px`;
-
-                if (state.tool === 'eraser') {
-                    brushCursorCircle.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-                    brushCursorCircle.style.borderColor = '#64748b';
-                } else {
-                    brushCursorCircle.style.backgroundColor = state.brushColor;
-                    brushCursorCircle.style.borderColor = '#ffffff';
-                }
-            }
-
-            window.addEventListener('mousemove', (e) => {
-                if (!state.isDrawingActive || areModalsOpen()) {
-                    brushCursorCircle.style.display = 'none';
+            function updateBrushDot(e) {
+                if (!state.isMyTurnDrawing || checkAnyModalOpen()) {
+                    customBrushDot.style.display = 'none';
                     return;
                 }
                 const rect = canvas.getBoundingClientRect();
-                if (
-                    e.clientX >= rect.left &&
-                    e.clientX <= rect.right &&
-                    e.clientY >= rect.top &&
-                    e.clientY <= rect.bottom
-                ) {
-                    brushCursorCircle.style.display = 'block';
-                    brushCursorCircle.style.left = `${e.clientX}px`;
-                    brushCursorCircle.style.top = `${e.clientY}px`;
-                } else {
-                    brushCursorCircle.style.display = 'none';
+                const clientX = e.clientX;
+                const clientY = e.clientY;
+
+                if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+                    customBrushDot.style.display = 'none';
+                    return;
                 }
-            });
 
-            // ========================================================
-            // ЗАЩИТА ОТ СЛУЧАЙНОГО ВЫХОДА / ОБНОВЛЕНИЯ ВКЛАДКИ
-            // ========================================================
-            window.addEventListener('beforeunload', (e) => {
-                if (state.isDrawingActive) {
-                    const msg = 'У вас идет оплаченная сессия рисования (20 минут). Если вы покинете сайт, бронь сгорит, а деньги не возвращаются!';
-                    e.returnValue = msg;
-                    return msg;
-                }
-            });
+                const visualScale = rect.width / canvas.width;
+                const visualSize = Math.max(state.brushSize * visualScale, 3);
 
-            // ========================================================
-            // МОДАЛКА БРОНИРОВАНИЯ И ВЫБОРА СТАВКИ (+15% ИЛИ СВОЯ)
-            // ========================================================
-
-            // Превью загружаемого фото
-            bookingAvatarFile.addEventListener('change', function() {
-                const file = this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        state.temporaryUploadedAvatar = e.target.result;
-                        bookingAvatarPreview.src = state.temporaryUploadedAvatar;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            function updateBookingPriceLimits() {
-                state.autoNextPrice = calcAutoPrice(state.currentPrice);
-                state.maxAllowedPrice = calcMaxPrice(state.currentPrice);
-
-                bookingAutoPriceBadge.textContent = `${state.autoNextPrice} ₽`;
-                hintMinPrice.textContent = state.autoNextPrice;
-                hintMaxPrice.textContent = state.maxAllowedPrice;
-
-                bookingCustomPriceInput.min = state.autoNextPrice;
-                bookingCustomPriceInput.max = state.maxAllowedPrice;
-
-                const mode = document.querySelector('input[name="priceOption"]:checked').value;
-                if (mode === 'auto') {
-                    submitBookingBtnText.textContent = `Оплатить ${state.autoNextPrice} ₽ и начать творить (20 мин)`;
-                    submitBookingBtn.disabled = false;
-                } else {
-                    validateCustomPrice();
-                }
+                customBrushDot.style.width = `${visualSize}px`;
+                customBrushDot.style.height = `${visualSize}px`;
+                customBrushDot.style.left = `${clientX}px`;
+                customBrushDot.style.top = `${clientY}px`;
+                customBrushDot.style.backgroundColor = state.tool === 'eraser' ? '#ffffff' : state.brushColor;
+                customBrushDot.style.display = 'block';
             }
 
-            function validateCustomPrice() {
-                const val = parseInt(bookingCustomPriceInput.value, 10);
-                if (isNaN(val) || val < state.autoNextPrice) {
-                    bookingCustomPriceError.textContent = `Ставка не может быть ниже авто-цены (${state.autoNextPrice} ₽)`;
-                    bookingCustomPriceError.classList.remove('hidden');
-                    submitBookingBtn.disabled = true;
-                } else if (val > state.maxAllowedPrice) {
-                    bookingCustomPriceError.textContent = `Ставка не может быть выше +50% (${state.maxAllowedPrice} ₽)`;
-                    bookingCustomPriceError.classList.remove('hidden');
-                    submitBookingBtn.disabled = true;
-                } else {
-                    bookingCustomPriceError.classList.add('hidden');
-                    submitBookingBtn.disabled = false;
-                    submitBookingBtnText.textContent = `Оплатить ${val} ₽ и начать творить (20 мин)`;
-                }
-            }
-
-            document.querySelectorAll('input[name="priceOption"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    if (e.target.value === 'custom') {
-                        bookingCustomInputWrapper.classList.remove('hidden');
-                        if (!bookingCustomPriceInput.value) {
-                            bookingCustomPriceInput.value = state.autoNextPrice;
-                        }
-                        validateCustomPrice();
-                    } else {
-                        bookingCustomInputWrapper.classList.add('hidden');
-                        bookingCustomPriceError.classList.add('hidden');
-                        submitBookingBtn.disabled = false;
-                        submitBookingBtnText.textContent = `Оплатить ${state.autoNextPrice} ₽ и начать творить (20 мин)`;
-                    }
-                });
-            });
-
-            bookingCustomPriceInput.addEventListener('input', validateCustomPrice);
-
-            // Открытие модалки бронирования
-            startBookingBtn.addEventListener('click', () => {
-                if (state.immunitySecondsLeft > 0 || state.isCanvasBusyByOther) return;
-                updateBookingPriceLimits();
-                paymentBookingModal.classList.remove('hidden');
-                bookingAuthorName.focus();
-            });
-
-            closePaymentModalBtn.addEventListener('click', () => paymentBookingModal.classList.add('hidden'));
-
-            // ========================================================
-            // ОПЛАТА И СТАРТ СЕССИИ РИСОВАНИЯ (20 МИНУТ)
-            // ========================================================
-
-            paymentBookingForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                const mode = document.querySelector('input[name="priceOption"]:checked').value;
-                let paid = state.autoNextPrice;
-
-                if (mode === 'custom') {
-                    const customVal = parseInt(bookingCustomPriceInput.value, 10);
-                    if (customVal < state.autoNextPrice || customVal > state.maxAllowedPrice) {
-                        validateCustomPrice();
-                        return;
-                    }
-                    paid = customVal;
-                }
-
-                const authorName = bookingAuthorName.value.trim() || 'Анонимный Художник';
-                const authorSocial = bookingAuthorSocial.value.trim();
-                const avatar = state.temporaryUploadedAvatar || 'https://placehold.co/100x100/e2e8f0/64748b?text=👑';
-
-                // Фиксируем оплаченного автора
-                state.currentSessionAuthor = {
-                    name: authorName,
-                    social: authorSocial,
-                    avatar: avatar,
-                    paidPrice: paid
-                };
-
-                // Закрываем модалку
-                paymentBookingModal.classList.add('hidden');
-
-                // Активируем редактор холста
-                startCanvasDrawingSession();
-
-                showToast('Оплата принята! 🎨', `Холст забронирован на 20 минут. Нарисуй свой шедевр!`);
-            });
-
-            function startCanvasDrawingSession() {
-                state.isDrawingActive = true;
-                state.undoStack = [];
-
-                if (state.selectedTemplateImage) {
-                    drawImageFromDataUrl(state.selectedTemplateImage);
-                    state.selectedTemplateImage = null;
-                } else {
-                    fillCanvasWhite();
-                }
-                saveUndoState();
-
-                emptyOverlay.classList.add('hidden');
-                canvas.classList.remove('canvas-default', 'canvas-shielded');
-                canvas.classList.add('canvas-editing');
-
-                drawTimerNotice.classList.remove('hidden');
-                drawingToolbar.classList.remove('hidden');
-                viewModeControls.classList.add('hidden');
-
-                if (state.currentKing && state.currentKing.imageDataUrl) {
-                    loadPrevArtBtn.classList.remove('hidden');
-                } else {
-                    loadPrevArtBtn.classList.add('hidden');
-                }
-
-                // Запуск 20-минутного таймера (1200 сек)
-                state.drawSecondsLeft = 1200;
-                drawTimerText.textContent = formatTime(state.drawSecondsLeft);
-
-                clearInterval(state.drawTimerInterval);
-                state.drawTimerInterval = setInterval(() => {
-                    state.drawSecondsLeft--;
-                    if (state.drawSecondsLeft <= 0) {
-                        clearInterval(state.drawTimerInterval);
-                        expireDrawingSession();
-                    } else {
-                        drawTimerText.textContent = formatTime(state.drawSecondsLeft);
-                    }
-                }, 1000);
-
-                updateBrushCursorVisual();
-            }
-
-            // Истечение 20 минут: деньги сгорают, холст освобождается
-            function expireDrawingSession() {
-                state.isDrawingActive = false;
-                state.isPaintingStroke = false;
-                state.currentSessionAuthor = null;
-                brushCursorCircle.style.display = 'none';
-
-                canvas.classList.remove('canvas-editing');
-                canvas.classList.add('canvas-default');
-
-                drawTimerNotice.classList.add('hidden');
-                drawingToolbar.classList.add('hidden');
-                viewModeControls.classList.remove('hidden');
-
-                // Возвращаем старый рисунок царя
-                if (state.currentKing && state.currentKing.imageDataUrl) {
-                    drawImageFromDataUrl(state.currentKing.imageDataUrl);
-                } else {
-                    fillCanvasWhite();
-                    emptyOverlay.classList.remove('hidden');
-                }
-
-                showToast('Время истекло!', '20 минут брони истекли. Холст снова свободен для всех.');
-            }
-
-            // ========================================================
-            // МЕХАНИКА РИСОВАНИЯ (МЫШЬ + ТАЧ)
-            // ========================================================
+            window.addEventListener('mousemove', updateBrushDot);
+            window.addEventListener('scroll', () => { customBrushDot.style.display = 'none'; });
 
             function getCanvasCoords(e) {
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-
-                let clientX = e.clientX;
-                let clientY = e.clientY;
-                if (e.touches && e.touches.length > 0) {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                }
-
-                return {
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY
-                };
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
             }
 
-            function startDraw(e) {
-                if (!state.isDrawingActive || areModalsOpen()) return;
+            function startStroke(e) {
+                if (!state.isMyTurnDrawing) return;
                 e.preventDefault();
-                state.isPaintingStroke = true;
-
+                state.isDrawing = true;
                 const pos = getCanvasCoords(e);
                 ctx.beginPath();
                 ctx.moveTo(pos.x, pos.y);
@@ -1167,10 +832,9 @@
                 ctx.stroke();
             }
 
-            function moveDraw(e) {
-                if (!state.isDrawingActive || !state.isPaintingStroke || areModalsOpen()) return;
+            function moveStroke(e) {
+                if (!state.isMyTurnDrawing || !state.isDrawing) return;
                 e.preventDefault();
-
                 const pos = getCanvasCoords(e);
                 ctx.lineWidth = state.brushSize;
                 ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.brushColor;
@@ -1178,36 +842,30 @@
                 ctx.stroke();
             }
 
-            function stopDraw(e) {
-                if (!state.isDrawingActive || !state.isPaintingStroke) return;
+            function endStroke(e) {
+                if (!state.isMyTurnDrawing || !state.isDrawing) return;
                 e.preventDefault();
-                state.isPaintingStroke = false;
+                state.isDrawing = false;
                 ctx.closePath();
                 saveUndoState();
             }
 
-            canvas.addEventListener('mousedown', startDraw);
-            canvas.addEventListener('mousemove', moveDraw);
-            window.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mousedown', startStroke);
+            canvas.addEventListener('mousemove', moveStroke);
+            window.addEventListener('mouseup', endStroke);
+            canvas.addEventListener('touchstart', startStroke, { passive: false });
+            canvas.addEventListener('touchmove', moveStroke, { passive: false });
+            window.addEventListener('touchend', endStroke, { passive: false });
 
-            canvas.addEventListener('touchstart', startDraw, { passive: false });
-            canvas.addEventListener('touchmove', moveDraw, { passive: false });
-            window.addEventListener('touchend', stopDraw, { passive: false });
-
-            // ========================================================
-            // ПАНЕЛЬ ИНСТРУМЕНТОВ
-            // ========================================================
-
-            function setActiveTool(tool) {
-                state.tool = tool;
-                if (tool === 'brush') {
-                    toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition shadow-sm';
+            function setActiveTool(toolName) {
+                state.tool = toolName;
+                if (toolName === 'brush') {
+                    toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
                     toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition';
                 } else {
-                    toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition shadow-sm';
+                    toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
                     toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition';
                 }
-                updateBrushCursorVisual();
             }
 
             colorSwatches.forEach(btn => {
@@ -1220,7 +878,6 @@
                     });
                     btn.classList.remove('border-transparent');
                     btn.classList.add('border-white', 'ring-2', 'ring-indigo-500');
-                    updateBrushCursorVisual();
                 });
             });
 
@@ -1231,13 +888,11 @@
                     b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
                     b.classList.add('border-transparent');
                 });
-                updateBrushCursorVisual();
             });
 
             brushSizeSlider.addEventListener('input', (e) => {
                 state.brushSize = parseInt(e.target.value, 10);
                 brushSizeLabel.textContent = `${state.brushSize}px`;
-                updateBrushCursorVisual();
             });
 
             toolBrushBtn.addEventListener('click', () => setActiveTool('brush'));
@@ -1250,26 +905,130 @@
                 }
             });
 
-            loadPrevArtBtn.addEventListener('click', () => {
-                if (state.currentKing && state.currentKing.imageDataUrl) {
-                    drawImageFromDataUrl(state.currentKing.imageDataUrl, () => {
-                        saveUndoState();
-                        showToast('Фон подгружен!', 'Теперь можно рисовать поверх прошлого шедевра.');
-                    });
-                }
-            });
-
             clearCanvasBtn.addEventListener('click', () => {
                 fillCanvasWhite();
                 saveUndoState();
             });
 
-            // ========================================================
-            // ПОДТВЕРЖДЕНИЕ ПУБЛИКАЦИИ ("ВЫ УВЕРЕНЫ?")
-            // ========================================================
+            openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
+            closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
+            confirmRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
 
-            requestPublishBtn.addEventListener('click', () => {
-                brushCursorCircle.style.display = 'none';
+            function refreshBookingPriceInputs() {
+                const prices = calculateAuctionPrices(state.currentPrice);
+                state.autoNextPrice = prices.autoPrice;
+                state.customMinPrice = prices.minCustom;
+                state.customMaxPrice = prices.maxCustom;
+
+                priceAutoDisplay.textContent = `${state.autoNextPrice} ₽`;
+                customPriceRangeHint.textContent = `Диапазон: от ${state.customMinPrice} ₽ до ${state.customMaxPrice} ₽`;
+                customPriceInput.min = state.customMinPrice;
+                customPriceInput.max = state.customMaxPrice;
+                customPriceInput.value = state.customMinPrice;
+
+                if (priceOptionAuto.checked) {
+                    state.selectedPrice = state.autoNextPrice;
+                    submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
+                    customPriceInputBox.classList.add('hidden');
+                } else {
+                    state.selectedPrice = parseInt(customPriceInput.value, 10) || state.customMinPrice;
+                    submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
+                    customPriceInputBox.classList.remove('hidden');
+                }
+            }
+
+            priceOptionAuto.addEventListener('change', refreshBookingPriceInputs);
+            priceOptionCustom.addEventListener('change', refreshBookingPriceInputs);
+
+            customPriceInput.addEventListener('input', () => {
+                let val = parseInt(customPriceInput.value, 10);
+                if (isNaN(val)) val = state.customMinPrice;
+                if (val > state.customMaxPrice) val = state.customMaxPrice;
+                state.selectedPrice = val;
+                submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
+            });
+
+            authorAvatarInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        uploadedAvatarBase64 = evt.target.result;
+                        bookingAvatarPreview.innerHTML = `<img src="${uploadedAvatarBase64}" class="w-full h-full object-cover">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            startDrawBookingBtn.addEventListener('click', () => {
+                refreshBookingPriceInputs();
+                bookingModal.classList.remove('hidden');
+                authorNameInput.focus();
+            });
+
+            closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
+
+            function updateMainButtonState() {
+                if (state.someoneElseDrawing) {
+                    startDrawBookingBtn.disabled = true;
+                    startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят другим художником</span>';
+                } else if (state.immunitySecondsLeft > 0) {
+                    startDrawBookingBtn.disabled = true;
+                    startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Щит активен (${formatTime(state.immunitySecondsLeft)})</span>`;
+                } else {
+                    startDrawBookingBtn.disabled = false;
+                    startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое</span>';
+                }
+            }
+
+            function startDrawingSession() {
+                state.isMyTurnDrawing = true;
+                state.drawingSecondsLeft = 1200; // 20 минут
+
+                bookingModal.classList.add('hidden');
+                viewModeControls.classList.add('hidden');
+                drawingToolbar.classList.remove('hidden');
+                editingModeNotice.classList.remove('hidden');
+
+                canvas.classList.remove('canvas-default', 'canvas-shielded');
+                canvas.classList.add('canvas-editing');
+                emptyCanvasOverlay.classList.add('hidden');
+
+                fillCanvasWhite();
+                saveUndoState();
+
+                window.onbeforeunload = function() {
+                    return "Ты сейчас рисуешь на холсте! Если обновишь или выйдешь, холст сгорит, а деньги не вернутся.";
+                };
+
+                clearInterval(state.drawingInterval);
+                state.drawingInterval = setInterval(() => {
+                    state.drawingSecondsLeft--;
+                    drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
+                    if (state.drawingSecondsLeft <= 0) {
+                        clearInterval(state.drawingInterval);
+                        alert("20 минут истекли! Время сессии вышло.");
+                        finishDrawingSession(false);
+                    }
+                }, 1000);
+            }
+
+            bookingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = authorNameInput.value.trim() || 'Анонимный Художник';
+                const social = authorSocialInput.value.trim();
+
+                state.bookingData = {
+                    name,
+                    social,
+                    avatar: uploadedAvatarBase64,
+                    price: state.selectedPrice
+                };
+
+                startDrawingSession();
+            });
+
+            openConfirmPublishModalBtn.addEventListener('click', () => {
                 confirmPublishModal.classList.remove('hidden');
             });
 
@@ -1277,306 +1036,302 @@
                 confirmPublishModal.classList.add('hidden');
             });
 
-            finalPublishCommitBtn.addEventListener('click', () => {
+            function finishDrawingSession() {
+                state.isMyTurnDrawing = false;
+                window.onbeforeunload = null;
+                clearInterval(state.drawingInterval);
+
+                drawingToolbar.classList.add('hidden');
+                editingModeNotice.classList.add('hidden');
+                viewModeControls.classList.remove('hidden');
+                canvas.classList.remove('canvas-editing');
+                customBrushDot.style.display = 'none';
+            }
+
+            finalPublishBtn.addEventListener('click', async () => {
                 confirmPublishModal.classList.add('hidden');
-                commitArtworkPublication();
+                finalPublishBtn.disabled = true;
+                finalPublishBtn.textContent = 'Публикуем...';
+
+                const imageDataUrl = canvas.toDataURL('image/png');
+                const b = state.bookingData;
+                const nextPrices = calculateAuctionPrices(b.price);
+                const shieldUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+                const { error } = await supabaseClient
+                    .from('canvas_history')
+                    .insert([{
+                        author_name: b.name,
+                        author_link: b.social,
+                        author_avatar: b.avatar,
+                        image_data: imageDataUrl,
+                        price: b.price,
+                        next_price: nextPrices.autoPrice,
+                        shield_until: shieldUntil,
+                        likes: 0,
+                        views: 1
+                    }]);
+
+                finalPublishBtn.disabled = false;
+                finalPublishBtn.textContent = 'Да, опубликовать!';
+
+                if (error) {
+                    alert('Ошибка записи в базу: ' + error.message);
+                    return;
+                }
+
+                finishDrawingSession();
+                await syncFromDatabase();
             });
 
-            function commitArtworkPublication() {
-                if (!state.currentSessionAuthor) return;
-
-                clearInterval(state.drawTimerInterval);
-                state.isDrawingActive = false;
-                state.isPaintingStroke = false;
-                brushCursorCircle.style.display = 'none';
-
-                const author = state.currentSessionAuthor;
-                const imageDataUrl = canvas.toDataURL('image/png');
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-                let socialHref = author.social;
-                if (author.social.startsWith('@')) {
-                    socialHref = `https://t.me/${author.social.substring(1)}`;
-                } else if (author.social && !author.social.startsWith('http')) {
-                    socialHref = `https://${author.social}`;
+            chooseBaseArtBtn.addEventListener('click', () => {
+                if (state.history.length === 0) {
+                    alert('История пока пуста, основы нет!');
+                    return;
                 }
+                baseArtGrid.innerHTML = '';
+                state.history.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'cursor-pointer group relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 hover:border-indigo-500 transition';
+                    card.innerHTML = `
+                        <img src="${item.imageDataUrl}" class="w-full aspect-[3/2] object-cover">
+                        <div class="p-1.5 text-[11px] font-bold text-slate-700 truncate">${item.name}</div>
+                    `;
+                    card.addEventListener('click', () => {
+                        drawImageFromDataUrl(item.imageDataUrl, () => {
+                            saveUndoState();
+                            chooseBaseModal.classList.add('hidden');
+                        });
+                    });
+                    baseArtGrid.appendChild(card);
+                });
+                chooseBaseModal.classList.remove('hidden');
+            });
 
-                const newKing = {
-                    id: Date.now(),
-                    name: author.name,
-                    social: author.social,
-                    socialHref: socialHref,
-                    price: author.paidPrice,
-                    timeStr: timeStr,
-                    avatarUrl: author.avatar,
-                    imageDataUrl: imageDataUrl,
-                    likesCount: 0,
-                    viewsCount: 1,
-                    timestamp: Date.now()
-                };
+            closeChooseBaseModalBtn.addEventListener('click', () => chooseBaseModal.classList.add('hidden'));
 
-                // Обновляем состояние
-                state.currentPrice = author.paidPrice;
-                state.autoNextPrice = calcAutoPrice(author.paidPrice);
-                state.currentKing = newKing;
-                state.history.unshift(newKing);
+            function startImmunityTimer(targetTimestamp) {
+                if (state.immunityInterval) clearInterval(state.immunityInterval);
 
-                // Очищаем временную сессию
-                state.currentSessionAuthor = null;
-                state.temporaryUploadedAvatar = null;
-                bookingAuthorName.value = '';
-                bookingAuthorSocial.value = '';
-                bookingAvatarFile.value = '';
-                bookingAvatarPreview.src = 'https://placehold.co/80x80/e2e8f0/64748b?text=Фото';
+                function checkTime() {
+                    const now = Date.now();
+                    const diff = Math.floor((targetTimestamp - now) / 1000);
 
-                // Обновляем интерфейс шапки и царя
-                headerCurrentPrice.textContent = `${state.autoNextPrice} ₽`;
-                kingName.textContent = newKing.name;
-                kingAvatarImg.src = newKing.avatarUrl;
-                kingPriceBadge.textContent = `${newKing.price} ₽`;
-
-                if (newKing.social) {
-                    kingSocialWrapper.classList.remove('hidden');
-                    kingSocialText.textContent = newKing.social.startsWith('@') ? newKing.social : `@${newKing.social}`;
-                    kingSocialLink.href = newKing.socialHref;
-                } else {
-                    kingSocialWrapper.classList.add('hidden');
-                }
-
-                // Выходим из режима рисования
-                canvas.classList.remove('canvas-editing');
-                drawTimerNotice.classList.add('hidden');
-                drawingToolbar.classList.add('hidden');
-                viewModeControls.classList.remove('hidden');
-                emptyOverlay.classList.add('hidden');
-
-                renderHistory();
-                startImmunityTimer(600); // 10 минут щита
-
-                showToast('Ты Царь Холста! 👑', `Рисунок навсегда закреплен в истории. Щит активен на 10 минут!`);
-
-                // Если подключен Supabase — отправляем в облако
-                if (supabaseClient) {
-                    try {
-                        const shieldDate = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-                        supabaseClient.from('canvas_history').insert([{
-                            author_name: newKing.name,
-                            author_link: newKing.social,
-                            image_data: imageDataUrl,
-                            price: newKing.price,
-                            next_price: state.autoNextPrice,
-                            shield_until: shieldDate
-                        }]);
-                    } catch (err) {
-                        console.error('Ошибка записи в Supabase:', err);
-                    }
-                }
-            }
-
-            // ========================================================
-            // ТАЙМЕР ЩИТА (10 МИНУТ ПОСЛЕ ПУБЛИКАЦИИ)
-            // ========================================================
-
-            function updateMainShieldButtonState() {
-                if (state.immunitySecondsLeft > 0) {
-                    immunityBox.classList.remove('hidden');
-                    immunityBox.classList.add('flex');
-                    canvasShieldBadge.classList.remove('hidden');
-                    canvas.classList.remove('canvas-default');
-                    canvas.classList.add('canvas-shielded');
-
-                    startBookingBtn.disabled = true;
-                    bookingBtnIcon.className = 'fa-solid fa-shield-halved';
-                    bookingBtnText.textContent = `Холст под щитом (${formatTime(state.immunitySecondsLeft)})`;
-                } else {
-                    immunityBox.classList.add('hidden');
-                    immunityBox.classList.remove('flex');
-                    canvasShieldBadge.classList.add('hidden');
-                    canvas.classList.remove('canvas-shielded');
-                    if (!state.isDrawingActive) canvas.classList.add('canvas-default');
-
-                    startBookingBtn.disabled = false;
-                    bookingBtnIcon.className = 'fa-solid fa-paintbrush';
-                    bookingBtnText.textContent = 'Нарисовать свое';
-                }
-            }
-
-            function startImmunityTimer(seconds = 600) {
-                clearInterval(state.immunityInterval);
-                state.immunitySecondsLeft = seconds;
-                immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
-                updateMainShieldButtonState();
-
-                state.immunityInterval = setInterval(() => {
-                    state.immunitySecondsLeft--;
-                    if (state.immunitySecondsLeft <= 0) {
+                    if (diff <= 0) {
                         state.immunitySecondsLeft = 0;
                         clearInterval(state.immunityInterval);
-                        updateMainShieldButtonState();
-                        showToast('Щит снят!', '10 минут иммунитета прошли. Холст снова открыт для захвата!');
+                        immunityBox.classList.add('hidden');
+                        canvasShieldBadge.classList.add('hidden');
+                        canvas.classList.remove('canvas-shielded');
+                        if (!state.isMyTurnDrawing) canvas.classList.add('canvas-default');
+                        updateMainButtonState();
                     } else {
+                        state.immunitySecondsLeft = diff;
                         immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
-                        updateMainShieldButtonState();
+                        immunityBox.classList.remove('hidden');
+                        canvasShieldBadge.classList.remove('hidden');
+                        canvas.classList.remove('canvas-default');
+                        canvas.classList.add('canvas-shielded');
+                        updateMainButtonState();
                     }
-                }, 1000);
+                }
+
+                checkTime();
+                state.immunityInterval = setInterval(checkTime, 1000);
             }
 
-            skipImmunityBtn.addEventListener('click', () => {
-                clearInterval(state.immunityInterval);
-                state.immunitySecondsLeft = 0;
-                updateMainShieldButtonState();
-                showToast('Тест: щит снят', 'Холст снова готов к перебитию.');
+            function openViewArtModal(art) {
+                state.currentlyViewedArt = art;
+                viewArtAuthorName.textContent = art.name;
+                viewArtPrice.textContent = `${art.price} ₽`;
+                viewArtTime.textContent = art.timeStr;
+                viewArtImage.src = art.imageDataUrl;
+                viewArtViewsCount.textContent = (art.views || 1) + 1;
+                likeArtCount.textContent = art.likes || 0;
+
+                if (art.avatar) {
+                    viewArtAvatar.innerHTML = `<img src="${art.avatar}" class="w-full h-full object-cover">`;
+                } else {
+                    viewArtAvatar.innerHTML = `👑`;
+                }
+
+                if (art.social) {
+                    viewArtAuthorLink.textContent = art.social;
+                    viewArtAuthorLink.href = art.social.startsWith('http') ? art.social : `https://${art.social}`;
+                    viewArtAuthorLink.classList.remove('hidden');
+                } else {
+                    viewArtAuthorLink.classList.add('hidden');
+                }
+
+                viewArtModal.classList.remove('hidden');
+            }
+
+            closeViewArtModalBtn.addEventListener('click', () => viewArtModal.classList.add('hidden'));
+
+            likeArtBtn.addEventListener('click', async () => {
+                if (!state.currentlyViewedArt) return;
+                const art = state.currentlyViewedArt;
+                art.likes = (art.likes || 0) + 1;
+                likeArtCount.textContent = art.likes;
+                likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600 animate-ping';
+                setTimeout(() => { likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600'; }, 300);
+
+                if (art.id) {
+                    await supabaseClient
+                        .from('canvas_history')
+                        .update({ likes: art.likes })
+                        .eq('id', art.id);
+                }
             });
 
-            // ========================================================
-            // ИСТОРИЯ ЗАХВАТОВ: ЛАЙКИ, ПРОСМОТРЫ, КЛИКАБЕЛЬНОСТЬ
-            // ========================================================
+            useAsBaseFromModalBtn.addEventListener('click', () => {
+                if (!state.isMyTurnDrawing) {
+                    alert('Сначала забронируй холст через кнопку "Нарисовать свое", а затем выбери этот рисунок как основу!');
+                    return;
+                }
+                drawImageFromDataUrl(state.currentlyViewedArt.imageDataUrl, () => {
+                    saveUndoState();
+                    viewArtModal.classList.add('hidden');
+                });
+            });
 
             function renderHistory() {
                 historyCountBadge.textContent = state.history.length;
                 historyList.innerHTML = '';
 
                 if (state.history.length === 0) {
-                    historyList.innerHTML = `
-                        <div class="text-center py-10 text-slate-400 text-xs">
-                            Холст еще никто не перебивал.<br>Стань первым Царем Холста!
-                        </div>
-                    `;
+                    emptyHistoryText.classList.remove('hidden');
                     return;
                 }
+                emptyHistoryText.classList.add('hidden');
 
                 state.history.forEach((item, index) => {
                     const isTop = index === 0;
                     const card = document.createElement('div');
-                    card.className = `flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer hover:shadow-md transition ${
-                        isTop ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200'
+                    card.className = `flex items-center gap-3 p-2.5 rounded-xl border transition cursor-pointer hover:border-indigo-400 bg-white ${
+                        isTop ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
                     }`;
 
-                    const avatarSrc = item.avatarUrl || 'https://placehold.co/70x70/e2e8f0/64748b?text=👤';
-                    const socialText = item.social ? item.social : 'без ссылки';
+                    const avatarHtml = item.avatar 
+                        ? `<img src="${item.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-200">`
+                        : `<div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
 
                     card.innerHTML = `
-                        <img src="${avatarSrc}" alt="Аватар" class="w-10 h-10 rounded-xl object-cover bg-white border border-slate-200 shrink-0">
-                        <img src="${item.imageDataUrl}" alt="Рисунок" class="w-12 h-9 rounded-lg object-cover bg-white border border-slate-200 shrink-0">
-                        
+                        <img src="${item.imageDataUrl}" class="w-14 h-10 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5">
+                                ${avatarHtml}
                                 <span class="text-xs font-bold text-slate-800 truncate">${item.name}</span>
-                                ${isTop ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-500 text-white rounded font-bold">Царь</span>' : ''}
+                                ${isTop ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">Царь</span>' : ''}
                             </div>
-                            <span class="text-[11px] text-slate-400 truncate block">${socialText}</span>
+                            <span class="text-[11px] text-slate-400 truncate block mt-0.5">${item.social || 'без ссылки'}</span>
                         </div>
-
                         <div class="text-right shrink-0">
                             <span class="font-display font-bold text-xs text-emerald-600 block">${item.price} ₽</span>
-                            <span class="text-[10px] text-slate-400 font-mono">${item.timeStr}</span>
+                            <span class="text-[10px] text-slate-400 flex items-center justify-end gap-1">
+                                <i class="fa-solid fa-heart text-[9px] text-rose-500"></i> ${item.likes || 0}
+                            </span>
                         </div>
                     `;
-
-                    // Клик на карточку открывает полный просмотр работы
-                    card.addEventListener('click', () => openArtworkViewModal(index));
-
+                    card.addEventListener('click', () => openViewArtModal(item));
                     historyList.appendChild(card);
                 });
             }
 
-            function openArtworkViewModal(index) {
-                const item = state.history[index];
-                if (!item) return;
+            async function syncFromDatabase() {
+                const { data, error } = await supabaseClient
+                    .from('canvas_history')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
 
-                brushCursorCircle.style.display = 'none';
-                state.viewingItemIndex = index;
-
-                // Увеличиваем счетчик просмотров работы
-                item.viewsCount = (item.viewsCount || 0) + 1;
-
-                viewAuthorAvatar.src = item.avatarUrl || 'https://placehold.co/100x100/e2e8f0/64748b?text=👑';
-                viewAuthorName.textContent = item.name;
-                viewArtworkImg.src = item.imageDataUrl;
-                viewArtworkPrice.textContent = `${item.price} ₽`;
-                viewArtworkViewsCount.textContent = item.viewsCount;
-                viewArtworkLikesCount.textContent = item.likesCount || 0;
-
-                if (item.social) {
-                    viewAuthorSocialWrap.classList.remove('hidden');
-                    viewAuthorSocialLink.textContent = item.social.startsWith('@') ? item.social : `@${item.social}`;
-                    viewAuthorSocialLink.href = item.socialHref;
-                } else {
-                    viewAuthorSocialWrap.classList.add('hidden');
+                if (error) {
+                    console.error('Ошибка Supabase:', error);
+                    return;
                 }
 
-                // Проверяем, лайкал ли пользователь эту работу
-                if (state.likedItems.has(item.id)) {
-                    likeHeartIcon.className = 'fa-solid fa-heart text-rose-600';
-                } else {
-                    likeHeartIcon.className = 'fa-regular fa-heart';
-                }
+                if (data && data.length > 0) {
+                    state.history = data.map(row => {
+                        const date = new Date(row.created_at);
+                        const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                        return {
+                            id: row.id,
+                            name: row.author_name,
+                            social: row.author_link,
+                            avatar: row.author_avatar,
+                            price: row.price,
+                            nextPrice: row.next_price,
+                            shieldUntil: row.shield_until,
+                            likes: row.likes || 0,
+                            views: row.views || 1,
+                            timeStr: timeStr,
+                            imageDataUrl: row.image_data
+                        };
+                    });
 
-                artViewModal.classList.remove('hidden');
+                    const king = state.history[0];
+                    state.currentKing = king;
+                    state.currentPrice = king.nextPrice;
+
+                    headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
+                    kingName.textContent = king.name;
+                    kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
+                    kingPriceBadge.classList.remove('hidden');
+
+                    if (king.avatar) {
+                        kingAvatarImg.src = king.avatar;
+                        kingAvatarImg.classList.remove('hidden');
+                        kingAvatarDefault.classList.add('hidden');
+                    } else {
+                        kingAvatarImg.classList.add('hidden');
+                        kingAvatarDefault.classList.remove('hidden');
+                    }
+
+                    if (king.social) {
+                        kingSocialWrapper.classList.remove('hidden');
+                        const displaySocial = king.social.startsWith('@') || king.social.includes('/') ? king.social : `@${king.social}`;
+                        kingSocialText.textContent = displaySocial;
+                        kingSocialLink.href = king.social.startsWith('http') ? king.social : `https://${king.social}`;
+                    } else {
+                        kingSocialWrapper.classList.add('hidden');
+                    }
+
+                    if (!state.isMyTurnDrawing) {
+                        drawImageFromDataUrl(king.imageDataUrl);
+                        emptyCanvasOverlay.classList.add('hidden');
+                    }
+
+                    renderHistory();
+                    startImmunityTimer(new Date(king.shieldUntil).getTime());
+                } else {
+                    state.currentPrice = 10;
+                    headerCurrentPrice.textContent = '10 ₽';
+                    kingName.textContent = 'Никто (холст свободен)';
+                    kingPriceBadge.classList.add('hidden');
+                    kingSocialWrapper.classList.add('hidden');
+                    fillCanvasWhite();
+                    emptyCanvasOverlay.classList.remove('hidden');
+                    renderHistory();
+                    updateMainButtonState();
+                }
             }
 
-            // Интерактивный лайк
-            likeArtworkBtn.addEventListener('click', () => {
-                if (state.viewingItemIndex === null) return;
-                const item = state.history[state.viewingItemIndex];
-                if (!item) return;
+            // Realtime слушатель
+            supabaseClient
+                .channel('realtime:canvas_history_v2')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
+                    syncFromDatabase();
+                })
+                .subscribe();
 
-                if (state.likedItems.has(item.id)) {
-                    state.likedItems.delete(item.id);
-                    item.likesCount = Math.max(0, (item.likesCount || 1) - 1);
-                    likeHeartIcon.className = 'fa-regular fa-heart';
-                } else {
-                    state.likedItems.add(item.id);
-                    item.likesCount = (item.likesCount || 0) + 1;
-                    likeHeartIcon.className = 'fa-solid fa-heart text-rose-600';
-                }
-                viewArtworkLikesCount.textContent = item.likesCount;
-            });
+            // Счетчик просмотров
+            let viewsCount = parseInt(localStorage.getItem('tsar_views_count') || '1', 10);
+            viewsCount++;
+            localStorage.setItem('tsar_views_count', viewsCount);
+            document.getElementById('statViews').textContent = viewsCount;
 
-            closeArtViewBtn.addEventListener('click', () => artViewModal.classList.add('hidden'));
-
-            // Использовать как основу для нового рисунка
-            useAsBaseBtn.addEventListener('click', () => {
-                if (state.viewingItemIndex === null) return;
-                const item = state.history[state.viewingItemIndex];
-                if (!item) return;
-
-                artViewModal.classList.add('hidden');
-
-                if (state.isDrawingActive) {
-                    drawImageFromDataUrl(item.imageDataUrl, () => saveUndoState());
-                    showToast('Основа подгружена!', 'Теперь можно рисовать прямо поверх этой работы.');
-                } else {
-                    // Запоминаем основу и предлагаем оплатить бронь
-                    state.selectedTemplateImage = item.imageDataUrl;
-                    updateBookingPriceLimits();
-                    paymentBookingModal.classList.remove('hidden');
-                    showToast('Рисунок выбран за основу!', 'Оплати ставку, и редактор откроется с этим фоном.');
-                }
-            });
-
-            // ========================================================
-            // МОДАЛКА ПРАВИЛ
-            // ========================================================
-            openRulesBtn.addEventListener('click', () => {
-                brushCursorCircle.style.display = 'none';
-                rulesModal.classList.remove('hidden');
-            });
-            closeRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
-            confirmRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
-
-            // Закрытие модалок по клику вне контента
-            [paymentBookingModal, confirmPublishModal, artViewModal, rulesModal].forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) modal.classList.add('hidden');
-                });
-            });
-
-            // Инициализация при старте
-            updateBookingPriceLimits();
-            updateMainShieldButtonState();
-
+            // Запуск
+            syncFromDatabase();
         })();
     </script>
 </body>
