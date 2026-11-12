@@ -136,6 +136,11 @@
     const closeRulesModalBtn = document.getElementById('closeRulesModalBtn');
     const confirmRulesBtn = document.getElementById('confirmRulesBtn');
 
+    const infoModal = document.getElementById('infoModal');
+    const openInfoBtn = document.getElementById('openInfoBtn');
+    const closeInfoModalBtn = document.getElementById('closeInfoModalBtn');
+    const confirmInfoBtn = document.getElementById('confirmInfoBtn');
+
     const offerModal = document.getElementById('offerModal');
     const openOfferBtn = document.getElementById('openOfferBtn');
     const closeOfferModalBtn = document.getElementById('closeOfferModalBtn');
@@ -171,6 +176,7 @@
     const viewArtAvatar = document.getElementById('viewArtAvatar');
     const viewArtAuthorName = document.getElementById('viewArtAuthorName');
     const viewArtAuthorLink = document.getElementById('viewArtAuthorLink');
+    const viewArtAuthorLinkText = document.getElementById('viewArtAuthorLinkText');
     const viewArtPrice = document.getElementById('viewArtPrice');
     const viewArtTime = document.getElementById('viewArtTime');
     const viewArtImage = document.getElementById('viewArtImage');
@@ -188,6 +194,23 @@
 
     let uploadedAvatarBase64 = null;
     myAnonBadge.textContent = state.anonName;
+
+    // Умный парсер ника Instagram (принимает "durov", "@durov", "https://instagram.com/durov")
+    function formatInstagramData(rawInput) {
+        if (!rawInput) return null;
+        let clean = String(rawInput).trim();
+        clean = clean
+            .replace(/^https?:\/\/(www\.)?instagram\.com\//i, '')
+            .replace(/^@+/, '')
+            .split(/[/?#]/)[0]
+            .trim();
+
+        if (!clean) return null;
+        return {
+            display: `@${clean}`,
+            url: `https://www.instagram.com/${encodeURIComponent(clean)}/`
+        };
+    }
 
     // ================= ЗВУК И КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
     const winSound = new Audio('fanfare.mp3');
@@ -416,6 +439,7 @@
 
     function checkAnyModalOpen() {
         return !rulesModal.classList.contains('hidden') ||
+               !infoModal.classList.contains('hidden') ||
                !offerModal.classList.contains('hidden') ||
                !privacyModal.classList.contains('hidden') ||
                !bookingModal.classList.contains('hidden') ||
@@ -808,6 +832,10 @@
     closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
     confirmRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
 
+    openInfoBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
+    closeInfoModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
+    confirmInfoBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
+
     openOfferBtn.addEventListener('click', () => offerModal.classList.remove('hidden'));
     closeOfferModalBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
     confirmOfferBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
@@ -877,8 +905,11 @@
 
     startDrawBookingBtn.addEventListener('click', () => {
         refreshBookingPriceInputs();
+        // Подставляем текущего Анонима из чата, если поле ещё пустое
+        if (!authorNameInput.value.trim()) {
+            authorNameInput.value = state.anonName;
+        }
         bookingModal.classList.remove('hidden');
-        authorNameInput.focus();
     });
 
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
@@ -896,7 +927,7 @@
         }
     }
 
-  async function checkLockStatus() {
+    async function checkLockStatus() {
         const { data } = await supabaseClient
             .from('canvas_lock')
             .select('*')
@@ -918,7 +949,6 @@
             }
         }
 
-        // Если до этого кто-то рисовал, а теперь замок снят — сразу подтягиваем новый рисунок и запускаем салют!
         const wasDrawingBefore = state.someoneElseDrawing;
         state.someoneElseDrawing = false;
         lockedCanvasOverlay.classList.add('hidden');
@@ -1036,8 +1066,10 @@
         submitBookingBtn.disabled = true;
         submitBookingBtnText.textContent = 'Переходим к оплате...';
 
-        const name = authorNameInput.value.trim() || 'Анонимный Художник';
-        const social = authorSocialInput.value.trim();
+        const name = authorNameInput.value.trim() || state.anonName;
+        const instaRaw = authorSocialInput.value.trim();
+        const instaObj = formatInstagramData(instaRaw);
+        const cleanSocialNick = instaObj ? instaObj.display : '';
 
         try {
             const res = await fetch(PAY_FUNCTION_URL, {
@@ -1049,7 +1081,7 @@
                 body: JSON.stringify({
                     action: 'create',
                     name,
-                    link: social,
+                    link: cleanSocialNick,
                     avatar: uploadedAvatarBase64,
                     price: state.selectedPrice
                 })
@@ -1211,9 +1243,10 @@
             viewArtAvatar.innerHTML = `👑`;
         }
 
-        if (art.social && !art.isBanned) {
-            viewArtAuthorLink.textContent = art.social;
-            viewArtAuthorLink.href = art.social.startsWith('http') ? art.social : `https://${art.social}`;
+        const instaData = formatInstagramData(art.social);
+        if (instaData && !art.isBanned) {
+            viewArtAuthorLinkText.textContent = instaData.display;
+            viewArtAuthorLink.href = instaData.url;
             viewArtAuthorLink.classList.remove('hidden');
         } else {
             viewArtAuthorLink.classList.add('hidden');
@@ -1266,9 +1299,10 @@
                 ? `<img src="${item.avatar}" class="w-7 h-7 rounded-full object-cover border border-slate-200">`
                 : `<div class="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
 
+            const instaData = formatInstagramData(item.social);
             const subText = item.isBanned 
                 ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
-                : escapeHtml(item.social || 'без ссылки');
+                : escapeHtml(instaData ? instaData.display : 'без соцсетей');
 
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-12 h-9 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
@@ -1354,11 +1388,11 @@
                     kingAvatarDefault.classList.remove('hidden');
                 }
 
-                if (king.social) {
+                const instaData = formatInstagramData(king.social);
+                if (instaData) {
                     kingSocialWrapper.classList.remove('hidden');
-                    const displaySocial = king.social.startsWith('@') || king.social.includes('/') ? king.social : `@${king.social}`;
-                    kingSocialText.textContent = displaySocial;
-                    kingSocialLink.href = king.social.startsWith('http') ? king.social : `https://${king.social}`;
+                    kingSocialText.textContent = instaData.display;
+                    kingSocialLink.href = instaData.url;
                 } else {
                     kingSocialWrapper.classList.add('hidden');
                 }
@@ -1445,7 +1479,7 @@
     setInterval(() => {
         if (!state.isMyTurnDrawing) syncFromDatabase();
     }, 5000);
-    
+
     loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();
