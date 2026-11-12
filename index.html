@@ -78,15 +78,18 @@
             -webkit-user-select: none;
         }
 
+        /* ИСПРАВЛЕНО: position: fixed для точного совпадения с координатами clientX/clientY без смещения */
         #customBrushDot {
             pointer-events: none;
-            position: absolute;
+            position: fixed;
+            top: 0;
+            left: 0;
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            z-index: 40;
+            z-index: 9999;
             display: none;
-            box-shadow: 0 0 4px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 4px rgba(0,0,0,0.45);
+            border: 1.5px solid rgba(255,255,255,0.9);
         }
 
         ::-webkit-scrollbar {
@@ -106,6 +109,9 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Кастомная точка-кисть вынесена в корень body для идеального позиционирования -->
+    <div id="customBrushDot"></div>
 
     <!-- Верхний бар -->
     <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-30 shadow-sm">
@@ -155,7 +161,7 @@
         <!-- Центр: Баннер царя + Холст + Управление -->
         <div class="lg:col-span-8 flex flex-col items-center w-full">
             
-            <!-- Карточка Царя Горы (исправлены размеры аватарки) -->
+            <!-- Карточка Царя Горы -->
             <div id="kingBanner" class="w-full max-w-[820px] mb-4 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3.5">
@@ -210,9 +216,6 @@
 
             <!-- Обертка Холста -->
             <div class="relative w-full max-w-[820px] aspect-[3/2] flex items-center justify-center">
-                <!-- Кастомная точка-кисть -->
-                <div id="customBrushDot"></div>
-
                 <canvas 
                     id="mainCanvas" 
                     width="960" 
@@ -231,7 +234,7 @@
                     </p>
                 </div>
 
-                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" (Синхронно через Supabase) -->
+                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" -->
                 <div id="lockedCanvasOverlay" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-20">
                     <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400 mb-3 animate-bounce">
                         <i class="fa-solid fa-paint-roller text-2xl"></i>
@@ -246,10 +249,9 @@
                     </div>
                 </div>
 
-                <!-- Плашка защищенного щита -->
-                <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3 right-3 bg-amber-500 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>Защищено щитом</span>
+                <!-- ИСПРАВЛЕНО: Только значок щита без текста -->
+                <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-amber-500 text-white shadow-lg flex items-center justify-center" title="Холст под защитой">
+                    <i class="fa-solid fa-shield-halved text-sm"></i>
                 </div>
             </div>
 
@@ -464,7 +466,7 @@
                     </div>
                 </div>
 
-                <!-- Выбор ставки (Авто +15% или Своя до +50%) -->
+                <!-- Выбор ставки -->
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
                     <span class="text-xs font-bold text-slate-700 block">Выбор ставки аукциона:</span>
                     
@@ -522,7 +524,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПУБЛИКАЦИИ: "ВЫ УВЕРЕНЫ?" -->
+    <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПУБЛИКАЦИИ -->
     <div id="confirmPublishModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800 text-center">
             <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
@@ -544,14 +546,13 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОСМОТРА РИСУНКА ИЗ ИСТОРИИ -->
+    <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА РИСУНКА ИЗ ИСТОРИИ -->
     <div id="viewArtModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative animate-fade-in text-slate-800 flex flex-col max-h-[92vh]">
             <button type="button" id="closeViewArtModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <!-- Автор работы -->
             <div class="flex items-center gap-3.5 mb-3.5">
                 <div id="viewArtAvatar" class="w-12 h-12 max-w-[48px] max-h-[48px] rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0">
                     👑
@@ -566,12 +567,10 @@
                 </div>
             </div>
 
-            <!-- Изображение -->
             <div class="relative w-full aspect-[3/2] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden flex items-center justify-center">
                 <img id="viewArtImage" src="" alt="Рисунок автора" class="w-full h-full object-contain">
             </div>
 
-            <!-- Лайки и просмотры -->
             <div class="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                 <div class="flex items-center gap-4">
                     <button type="button" id="likeArtBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center gap-2 transition active:scale-95">
@@ -592,7 +591,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОСНОВЫ ВО ВРЕМЯ РИСОВАНИЯ -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОСНОВЫ -->
     <div id="chooseBaseModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl relative animate-fade-in text-slate-800 flex flex-col max-h-[85vh]">
             <button type="button" id="closeChooseBaseModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
@@ -609,7 +608,7 @@
         Царь Холста • Независимый арт-аукцион • Рисуй, владей троном, побеждай
     </footer>
 
-    <!-- JS ЛОГИКА + SUPABASE С СИНХРОНИЗАЦИЕЙ БЛОКИРОВКИ -->
+    <!-- JS ЛОГИКА -->
     <script>
         (function() {
             const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
@@ -626,12 +625,10 @@
                 bookingData: null,
                 isMyTurnDrawing: false,
                 someoneElseDrawing: false,
-                lockedUntil: null,
                 lockedByName: '',
 
                 drawingSecondsLeft: 1200,
                 drawingInterval: null,
-                lockCheckerInterval: null,
 
                 immunitySecondsLeft: 0,
                 immunityInterval: null,
@@ -704,7 +701,6 @@
             const customPriceInput = document.getElementById('customPriceInput');
             const customPriceRangeHint = document.getElementById('customPriceRangeHint');
             const submitBookingBtnText = document.getElementById('submitBookingBtnText');
-            const submitBookingBtn = document.getElementById('submitBookingBtn');
 
             const confirmPublishModal = document.getElementById('confirmPublishModal');
             const cancelConfirmPublishBtn = document.getElementById('cancelConfirmPublishBtn');
@@ -780,6 +776,7 @@
                        !chooseBaseModal.classList.contains('hidden');
             }
 
+            // Точное позиционирование круглой точки-кисти поверх курсора
             function updateBrushDot(e) {
                 if (!state.isMyTurnDrawing || checkAnyModalOpen()) {
                     customBrushDot.style.display = 'none';
@@ -981,7 +978,6 @@
                 }
             }
 
-            // Синхронизация блокировки холста через Supabase
             async function lockCanvasOnServer(name, minutes = 20) {
                 const lockUntil = new Date(Date.now() + minutes * 60 * 1000).toISOString();
                 await supabaseClient
@@ -1024,7 +1020,7 @@
 
             async function startDrawingSession() {
                 state.isMyTurnDrawing = true;
-                state.drawingSecondsLeft = 1200; // 20 минут
+                state.drawingSecondsLeft = 1200;
 
                 bookingModal.classList.add('hidden');
                 viewModeControls.classList.add('hidden');
@@ -1038,7 +1034,6 @@
                 fillCanvasWhite();
                 saveUndoState();
 
-                // Оповещаем весь мир в Supabase о блокировке холста
                 await lockCanvasOnServer(state.bookingData.name, 20);
 
                 window.onbeforeunload = function() {
@@ -1091,7 +1086,6 @@
                 canvas.classList.remove('canvas-editing');
                 customBrushDot.style.display = 'none';
 
-                // Снимаем блокировку на сервере
                 await unlockCanvasOnServer();
             }
 
@@ -1365,7 +1359,6 @@
                 await checkLockStatus();
             }
 
-            // Realtime слушатель истории и статуса блокировки
             supabaseClient
                 .channel('realtime:tsar_channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
@@ -1376,16 +1369,13 @@
                 })
                 .subscribe();
 
-            // Периодическая проверка статуса блокировки каждые 2 секунды
             setInterval(checkLockStatus, 2000);
 
-            // Счетчик просмотров
             let viewsCount = parseInt(localStorage.getItem('tsar_views_count') || '1', 10);
             viewsCount++;
             localStorage.setItem('tsar_views_count', viewsCount);
             document.getElementById('statViews').textContent = viewsCount;
 
-            // Запуск
             syncFromDatabase();
         })();
     </script>
