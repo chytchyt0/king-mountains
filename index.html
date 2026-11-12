@@ -386,18 +386,19 @@
                 </div>
             </div>
 
-            <form id="bookingForm" class="space-y-4">
+            <form id="bookingForm" autocomplete="off" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
                         Твое имя или проект *
                     </label>
                     <input 
                         type="text" 
-                        id="authorNameInput" 
-                        required 
-                        maxlength="32"
-                        placeholder="Например: Влад | Автор канала"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+    id="authorSocialInput" 
+    name="canvas_social_url_random"
+    autocomplete="one-time-code"
+    maxlength="60"
+    placeholder="username или t.me/my_channel"
+    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
                     >
                 </div>
 
@@ -462,11 +463,12 @@
                         <div id="customPriceInputBox" class="hidden mt-2.5 pt-2 border-t border-slate-100">
                             <div class="flex items-center gap-2">
                                 <input 
-                                    type="number" 
-                                    id="customPriceInput" 
-                                    placeholder="Сумма в рублях" 
-                                    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold"
-                                >
+    type="number" 
+    id="customPriceInput" 
+    autocomplete="off"
+    placeholder="Сумма в рублях" 
+    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold"
+>
                                 <span class="text-sm font-bold text-slate-600">₽</span>
                             </div>
                             <span id="customPriceRangeHint" class="text-[10px] text-slate-400 mt-1 block"></span>
