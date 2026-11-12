@@ -1,6 +1,7 @@
 (function() {
     const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Goz2iCXq20ySsctUBX1MWg_5ZpD7eVQ';
+    const PAY_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/yookassa-pay`;
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const state = {
@@ -10,6 +11,7 @@
         customMaxPrice: 13,
         selectedPrice: 11,
 
+        orderToken: null,
         bookingData: null,
         isMyTurnDrawing: false,
         someoneElseDrawing: false,
@@ -712,39 +714,21 @@
         updateMainButtonState();
     }
 
-    bookingForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        submitBookingBtn.disabled = true;
-        submitBookingBtnText.textContent = 'Проверяем и бронируем...';
-
-        const name = authorNameInput.value.trim() || 'Анонимный Художник';
-        const social = authorSocialInput.value.trim();
-
-        const { data, error } = await supabaseClient.rpc('book_canvas', {
-            p_user_name: name
-        });
-
-        submitBookingBtn.disabled = false;
-
-        if (error || !data || !data.ok) {
-            alert('Не удалось забронировать холст: ' + (data?.error || error?.message || 'Ошибка сервера'));
-            refreshBookingPriceInputs();
-            await checkLockStatus();
-            return;
-        }
-
+    // Запуск режима рисования после подтвержденной оплаты
+    function activatePaidDrawingSession(order, remainingSeconds = 1200) {
         state.bookingData = {
-            name,
-            social,
-            avatar: uploadedAvatarBase64,
-            price: state.selectedPrice
+            name: order.author_name,
+            social: order.author_link,
+            avatar: order.author_avatar,
+            price: order.price
         };
 
         state.isMyTurnDrawing = true;
-        state.drawingSecondsLeft = 1200;
+        state.drawingSecondsLeft = Math.max(remainingSeconds, 60);
 
         bookingModal.classList.add('hidden');
         viewModeControls.classList.add('hidden');
+        lockedCanvasOverlay.classList.add('hidden');
         drawingToolbar.classList.remove('hidden');
         editingModeNotice.classList.remove('hidden');
 
@@ -761,6 +745,7 @@
         };
 
         clearInterval(state.drawingInterval);
+        drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
         state.drawingInterval = setInterval(() => {
             state.drawingSecondsLeft--;
             drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
@@ -770,6 +755,114 @@
                 finishDrawingSession();
             }
         }, 1000);
+    }
+
+    // Проверка токена заказа после возврата со страницы ЮKassa
+    async function checkReturnedPaymentOrder() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('order_token');
+        const tokenFromStorage = localStorage.getItem('tsar_pending_order_token');
+        const token = tokenFromUrl || tokenFromStorage;
+
+        if (!token) return;
+
+        // Очищаем ?order_token=... из адресной строки
+        if (tokenFromUrl) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Проверяем до 5 раз с паузой 1.5 сек (на случай задержки вебхука от ЮKassa)
+        for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+                const res = await fetch(PAY_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ action: 'check', secretToken: token })
+                });
+
+                const result = await res.json();
+
+                if (result.ok && result.status === 'paid' && result.order) {
+                    state.orderToken = token;
+                    localStorage.setItem('tsar_pending_order_token', token);
+
+                    // Считаем точный остаток времени замка в базе
+                    const { data: lockData } = await supabaseClient
+                        .from('canvas_lock')
+                        .select('locked_until')
+                        .eq('id', 1)
+                        .single();
+
+                    let secondsLeft = 1200;
+                    if (lockData?.locked_until) {
+                        const diff = Math.floor((new Date(lockData.locked_until).getTime() - Date.now()) / 1000);
+                        if (diff > 0) secondsLeft = diff;
+                    }
+
+                    activatePaidDrawingSession(result.order, secondsLeft);
+                    return;
+                }
+
+                if (result.ok && (result.status === 'used' || result.status === 'canceled')) {
+                    localStorage.removeItem('tsar_pending_order_token');
+                    if (result.status === 'canceled') {
+                        alert('Пока шла оплата, холст успел занять другой художник. Средства автоматически возвращены.');
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error('Ошибка проверки платежа:', err);
+            }
+
+            await new Promise(r => setTimeout(r, 1500));
+        }
+    }
+
+    // Отправка на оплату в ЮKassa
+    bookingForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBookingBtn.disabled = true;
+        submitBookingBtnText.textContent = 'Переходим к оплате...';
+
+        const name = authorNameInput.value.trim() || 'Анонимный Художник';
+        const social = authorSocialInput.value.trim();
+
+        try {
+            const res = await fetch(PAY_FUNCTION_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    action: 'create',
+                    name,
+                    link: social,
+                    avatar: uploadedAvatarBase64,
+                    price: state.selectedPrice
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.ok || !data.confirmationUrl) {
+                submitBookingBtn.disabled = false;
+                refreshBookingPriceInputs();
+                alert('Не удалось создать платеж: ' + (data.error || 'Ошибка сервера'));
+                await checkLockStatus();
+                return;
+            }
+
+            localStorage.setItem('tsar_pending_order_token', data.secretToken);
+            window.location.href = data.confirmationUrl;
+        } catch (err) {
+            submitBookingBtn.disabled = false;
+            refreshBookingPriceInputs();
+            alert('Ошибка соединения с платежным шлюзом. Попробуйте ещё раз.');
+        }
     });
 
     openConfirmPublishModalBtn.addEventListener('click', () => {
@@ -783,6 +876,8 @@
     function finishDrawingSession() {
         closeStampMode();
         state.isMyTurnDrawing = false;
+        state.orderToken = null;
+        localStorage.removeItem('tsar_pending_order_token');
         window.onbeforeunload = null;
         clearInterval(state.drawingInterval);
 
@@ -804,13 +899,15 @@
         }
 
         const b = state.bookingData;
+        const token = state.orderToken || localStorage.getItem('tsar_pending_order_token');
 
         const { data, error } = await supabaseClient.rpc('publish_canvas', {
             p_name: b.name,
             p_link: b.social,
             p_avatar: b.avatar,
             p_image: imageDataUrl,
-            p_price: b.price
+            p_price: b.price,
+            p_token: token
         });
 
         finalPublishBtn.disabled = false;
@@ -1124,5 +1221,5 @@
         .subscribe();
 
     setInterval(checkLockStatus, 2000);
-    syncFromDatabase();
+    syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();
