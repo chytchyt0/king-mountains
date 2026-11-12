@@ -5,10 +5,10 @@
 
     const state = {
         currentPrice: 10,
-        autoNextPrice: 12,
-        customMinPrice: 12,
-        customMaxPrice: 15,
-        selectedPrice: 12,
+        autoNextPrice: 11,
+        customMinPrice: 11,
+        customMaxPrice: 13,
+        selectedPrice: 11,
 
         bookingData: null,
         isMyTurnDrawing: false,
@@ -32,7 +32,6 @@
         isDrawing: false,
         undoStack: [],
 
-        // Состояние для вставки картинки ("Штамп")
         stamp: {
             active: false,
             img: null,
@@ -91,7 +90,6 @@
     const clearCanvasBtn = document.getElementById('clearCanvasBtn');
     const openConfirmPublishModalBtn = document.getElementById('openConfirmPublishModalBtn');
 
-    // Элементы управления штампом
     const stampControlPanel = document.getElementById('stampControlPanel');
     const stampScaleSlider = document.getElementById('stampScaleSlider');
     const stampScaleLabel = document.getElementById('stampScaleLabel');
@@ -147,13 +145,14 @@
 
     let uploadedAvatarBase64 = null;
 
+    // Шаг аукциона +5% (минимум +1 ₽), ручной выбор от +5% до +25%
     function calculateAuctionPrices(basePrice) {
-        const autoPrice = Math.max(Math.ceil(basePrice * 1.15), basePrice + 2);
-        const maxPrice = Math.ceil(basePrice * 1.50);
+        const autoPrice = Math.max(Math.ceil(basePrice * 1.05), basePrice + 1);
+        const maxPrice = Math.max(Math.ceil(basePrice * 1.25), autoPrice);
         return {
             autoPrice,
             minCustom: autoPrice,
-            maxCustom: Math.max(maxPrice, autoPrice)
+            maxCustom: maxPrice
         };
     }
 
@@ -230,7 +229,6 @@
         return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
     }
 
-    // Конвертация HEX в RGB
     function hexToRgb(hex) {
         const cleanHex = hex.replace('#', '');
         const bigint = parseInt(cleanHex, 16);
@@ -241,12 +239,10 @@
         };
     }
 
-    // Конвертация RGB в HEX
     function rgbToHex(r, g, b) {
         return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
-    // Алгоритм заливки области (Flood Fill) с допуском сглаживания
     function floodFill(startX, startY, fillHexColor) {
         const x = Math.floor(startX);
         const y = Math.floor(startY);
@@ -306,7 +302,6 @@
         saveUndoState();
     }
 
-    // Пипетка (взять цвет с холста)
     function pickColorAt(x, y) {
         const px = Math.max(0, Math.min(canvas.width - 1, Math.floor(x)));
         const py = Math.max(0, Math.min(canvas.height - 1, Math.floor(y)));
@@ -442,7 +437,7 @@
         saveUndoState();
     });
 
-    // ================= ЛОГИКА ВСТАВКИ КАРТИНКИ ("ШТАМП") =================
+    // ================= ВСТАВКА КАРТИНКИ ("ШТАМП") =================
     function renderStampOverlay() {
         stampCtx.clearRect(0, 0, stampOverlayCanvas.width, stampOverlayCanvas.height);
         if (!state.stamp.active || !state.stamp.img) return;
@@ -455,10 +450,8 @@
         stampCtx.translate(x, y);
         stampCtx.rotate((rotation * Math.PI) / 180);
 
-        // Рисуем саму картинку
         stampCtx.drawImage(img, -w / 2, -h / 2, w, h);
 
-        // Рисуем пунктирную рамку вокруг картинки для наглядности
         stampCtx.strokeStyle = '#4f46e5';
         stampCtx.lineWidth = 3;
         stampCtx.setLineDash([10, 6]);
@@ -468,7 +461,6 @@
     }
 
     function openStampMode(img) {
-        // Подгоняем начальный масштаб, чтобы картинка адекватно поместилась на холст
         const maxInitW = canvas.width * 0.55;
         const maxInitH = canvas.height * 0.55;
         const ratio = Math.min(maxInitW / img.width, maxInitH / img.height, 1);
@@ -578,7 +570,7 @@
         saveUndoState();
         closeStampMode();
     });
-    // ===================================================================
+    // =============================================================
 
     openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
     closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
@@ -777,7 +769,6 @@
         finalPublishBtn.disabled = true;
         finalPublishBtn.textContent = 'Публикуем...';
 
-        // Сжимаем итоговый холст в JPEG 0.88 (или PNG если легкий), чтобы даже сложные фото гарантированно укладывались в лимит 800 КБ
         let imageDataUrl = canvas.toDataURL('image/png');
         if (imageDataUrl.length > 750000) {
             imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
@@ -805,13 +796,15 @@
         await syncFromDatabase();
     });
 
+    // Запрещаем выбирать скрытые модерацией работы как основу из истории
     chooseBaseArtBtn.addEventListener('click', () => {
-        if (state.history.length === 0) {
+        const validHistory = state.history.filter(item => !item.isBanned);
+        if (validHistory.length === 0) {
             alert('История пока пуста, основы нет!');
             return;
         }
         baseArtGrid.innerHTML = '';
-        state.history.forEach(item => {
+        validHistory.forEach(item => {
             const card = document.createElement('div');
             card.className = 'cursor-pointer group relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 hover:border-indigo-500 transition';
             card.innerHTML = `
@@ -880,7 +873,7 @@
             viewArtAvatar.innerHTML = `👑`;
         }
 
-        if (art.social) {
+        if (art.social && !art.isBanned) {
             viewArtAuthorLink.textContent = art.social;
             viewArtAuthorLink.href = art.social.startsWith('http') ? art.social : `https://${art.social}`;
             viewArtAuthorLink.classList.remove('hidden');
@@ -922,8 +915,10 @@
         }
         emptyHistoryText.classList.add('hidden');
 
-        state.history.forEach((item, index) => {
-            const isTop = index === 0;
+        const currentKingId = state.currentKing ? state.currentKing.id : null;
+
+        state.history.forEach((item) => {
+            const isTop = item.id === currentKingId && !item.isBanned;
             const card = document.createElement('div');
             card.className = `flex items-center gap-3 p-2.5 rounded-xl border transition cursor-pointer hover:border-indigo-400 bg-white ${
                 isTop ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
@@ -933,6 +928,10 @@
                 ? `<img src="${item.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-200">`
                 : `<div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
 
+            const subText = item.isBanned 
+                ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
+                : (item.social || 'без ссылки');
+
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-14 h-10 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
                 <div class="min-w-0 flex-1">
@@ -941,7 +940,7 @@
                         <span class="text-xs font-bold text-slate-800 truncate">${item.name}</span>
                         ${isTop ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">Царь</span>' : ''}
                     </div>
-                    <span class="text-[11px] text-slate-400 truncate block mt-0.5">${item.social || 'без ссылки'}</span>
+                    <span class="text-[11px] text-slate-400 truncate block mt-0.5">${subText}</span>
                 </div>
                 <div class="text-right shrink-0">
                     <span class="font-display font-bold text-xs text-emerald-600 block">${item.price} ₽</span>
@@ -980,45 +979,66 @@
                     nextPrice: row.next_price,
                     shieldUntil: row.shield_until,
                     likes: row.likes || 0,
+                    isBanned: Boolean(row.is_banned),
                     timeStr: timeStr,
                     imageDataUrl: row.image_data
                 };
             });
 
-            const king = state.history[0];
-            state.currentKing = king;
-            state.currentPrice = king.nextPrice;
-
+            // Цена следующей ставки берется от самой последней записи (даже если ее забанили)
+            const latestEntry = state.history[0];
+            state.currentPrice = latestEntry.nextPrice;
             headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
-            kingName.textContent = king.name;
-            kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
-            kingPriceBadge.classList.remove('hidden');
 
-            if (king.avatar) {
-                kingAvatarImg.src = king.avatar;
-                kingAvatarImg.classList.remove('hidden');
-                kingAvatarDefault.classList.add('hidden');
-            } else {
-                kingAvatarImg.classList.add('hidden');
-                kingAvatarDefault.classList.remove('hidden');
-            }
+            // На главный холст и в шапку Царя выводим последнюю НЕ забаненную работу
+            const king = state.history.find(item => !item.isBanned);
+            state.currentKing = king || null;
 
-            if (king.social) {
-                kingSocialWrapper.classList.remove('hidden');
-                const displaySocial = king.social.startsWith('@') || king.social.includes('/') ? king.social : `@${king.social}`;
-                kingSocialText.textContent = displaySocial;
-                kingSocialLink.href = king.social.startsWith('http') ? king.social : `https://${king.social}`;
+            if (king) {
+                kingName.textContent = king.name;
+                kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
+                kingPriceBadge.classList.remove('hidden');
+
+                if (king.avatar) {
+                    kingAvatarImg.src = king.avatar;
+                    kingAvatarImg.classList.remove('hidden');
+                    kingAvatarDefault.classList.add('hidden');
+                } else {
+                    kingAvatarImg.classList.add('hidden');
+                    kingAvatarDefault.classList.remove('hidden');
+                }
+
+                if (king.social) {
+                    kingSocialWrapper.classList.remove('hidden');
+                    const displaySocial = king.social.startsWith('@') || king.social.includes('/') ? king.social : `@${king.social}`;
+                    kingSocialText.textContent = displaySocial;
+                    kingSocialLink.href = king.social.startsWith('http') ? king.social : `https://${king.social}`;
+                } else {
+                    kingSocialWrapper.classList.add('hidden');
+                }
+
+                if (!state.isMyTurnDrawing) {
+                    drawImageFromDataUrl(king.imageDataUrl);
+                    emptyCanvasOverlay.classList.add('hidden');
+                }
+
+                renderHistory();
+                startImmunityTimer(new Date(king.shieldUntil).getTime());
             } else {
+                kingName.textContent = 'Никто (холст свободен)';
+                kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
+                immunityBox.classList.add('hidden');
+                canvasShieldBadge.classList.add('hidden');
+                canvas.classList.remove('canvas-shielded');
+                if (!state.isMyTurnDrawing) {
+                    canvas.classList.add('canvas-default');
+                    fillCanvasWhite();
+                    emptyCanvasOverlay.classList.remove('hidden');
+                }
+                renderHistory();
+                updateMainButtonState();
             }
-
-            if (!state.isMyTurnDrawing) {
-                drawImageFromDataUrl(king.imageDataUrl);
-                emptyCanvasOverlay.classList.add('hidden');
-            }
-
-            renderHistory();
-            startImmunityTimer(new Date(king.shieldUntil).getTime());
         } else {
             state.currentPrice = 10;
             headerCurrentPrice.textContent = '10 ₽';
@@ -1034,7 +1054,7 @@
         await checkLockStatus();
     }
 
-    // Реальный счетчик онлайна через Supabase Presence
+    // Реальный онлайн через Supabase Presence
     const sessionUserId = 'user_' + Math.random().toString(36).substring(2, 11);
     const presenceChannel = supabaseClient.channel('online_users', {
         config: {
