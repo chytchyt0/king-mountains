@@ -28,13 +28,29 @@
 
         brushColor: '#0f172a',
         brushSize: 8,
-        tool: 'brush',
+        tool: 'brush', // 'brush' | 'eraser' | 'fill' | 'pipette'
         isDrawing: false,
-        undoStack: []
+        undoStack: [],
+
+        // Состояние для вставки картинки ("Штамп")
+        stamp: {
+            active: false,
+            img: null,
+            x: 480,
+            y: 320,
+            scale: 0.5,
+            rotation: 0,
+            isDragging: false,
+            dragOffsetX: 0,
+            dragOffsetY: 0
+        }
     };
 
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const stampOverlayCanvas = document.getElementById('stampOverlayCanvas');
+    const stampCtx = stampOverlayCanvas.getContext('2d');
+
     const customBrushDot = document.getElementById('customBrushDot');
     const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
     const lockedCanvasOverlay = document.getElementById('lockedCanvasOverlay');
@@ -66,11 +82,23 @@
     const brushSizeSlider = document.getElementById('brushSizeSlider');
     const brushSizeLabel = document.getElementById('brushSizeLabel');
     const toolBrushBtn = document.getElementById('toolBrushBtn');
+    const toolFillBtn = document.getElementById('toolFillBtn');
+    const toolPipetteBtn = document.getElementById('toolPipetteBtn');
     const toolEraserBtn = document.getElementById('toolEraserBtn');
     const undoBtn = document.getElementById('undoBtn');
+    const insertImageInput = document.getElementById('insertImageInput');
     const chooseBaseArtBtn = document.getElementById('chooseBaseArtBtn');
     const clearCanvasBtn = document.getElementById('clearCanvasBtn');
     const openConfirmPublishModalBtn = document.getElementById('openConfirmPublishModalBtn');
+
+    // Элементы управления штампом
+    const stampControlPanel = document.getElementById('stampControlPanel');
+    const stampScaleSlider = document.getElementById('stampScaleSlider');
+    const stampScaleLabel = document.getElementById('stampScaleLabel');
+    const stampRotateSlider = document.getElementById('stampRotateSlider');
+    const stampRotateLabel = document.getElementById('stampRotateLabel');
+    const cancelStampBtn = document.getElementById('cancelStampBtn');
+    const applyStampBtn = document.getElementById('applyStampBtn');
 
     const rulesModal = document.getElementById('rulesModal');
     const openRulesBtn = document.getElementById('openRulesBtn');
@@ -166,7 +194,7 @@
     }
 
     function updateBrushDot(e) {
-        if (!state.isMyTurnDrawing || checkAnyModalOpen()) {
+        if (!state.isMyTurnDrawing || state.stamp.active || checkAnyModalOpen() || state.tool === 'fill' || state.tool === 'pipette') {
             customBrushDot.style.display = 'none';
             return;
         }
@@ -193,20 +221,123 @@
     window.addEventListener('mousemove', updateBrushDot);
     window.addEventListener('scroll', () => { customBrushDot.style.display = 'none'; });
 
-    function getCanvasCoords(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
+    function getCanvasCoords(e, targetCanvas = canvas) {
+        const rect = targetCanvas.getBoundingClientRect();
+        const scaleX = targetCanvas.width / rect.width;
+        const scaleY = targetCanvas.height / rect.height;
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
     }
 
+    // Конвертация HEX в RGB
+    function hexToRgb(hex) {
+        const cleanHex = hex.replace('#', '');
+        const bigint = parseInt(cleanHex, 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
+        };
+    }
+
+    // Конвертация RGB в HEX
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    // Алгоритм заливки области (Flood Fill) с допуском сглаживания
+    function floodFill(startX, startY, fillHexColor) {
+        const x = Math.floor(startX);
+        const y = Math.floor(startY);
+        const width = canvas.width;
+        const height = canvas.height;
+
+        if (x < 0 || x >= width || y < 0 || y >= height) return;
+
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+
+        const startIdx = (y * width + x) * 4;
+        const startR = data[startIdx];
+        const startG = data[startIdx + 1];
+        const startB = data[startIdx + 2];
+
+        const fillRgb = hexToRgb(fillHexColor);
+
+        if (Math.abs(startR - fillRgb.r) < 5 &&
+            Math.abs(startG - fillRgb.g) < 5 &&
+            Math.abs(startB - fillRgb.b) < 5) {
+            return;
+        }
+
+        const tolerance = 35;
+        const visited = new Uint8Array(width * height);
+        const stack = [[x, y]];
+
+        while (stack.length > 0) {
+            const [cx, cy] = stack.pop();
+            const pos = cy * width + cx;
+            if (visited[pos]) continue;
+
+            const idx = pos * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+
+            if (Math.abs(r - startR) <= tolerance &&
+                Math.abs(g - startG) <= tolerance &&
+                Math.abs(b - startB) <= tolerance) {
+                
+                visited[pos] = 1;
+                data[idx] = fillRgb.r;
+                data[idx + 1] = fillRgb.g;
+                data[idx + 2] = fillRgb.b;
+                data[idx + 3] = 255;
+
+                if (cx > 0) stack.push([cx - 1, cy]);
+                if (cx < width - 1) stack.push([cx + 1, cy]);
+                if (cy > 0) stack.push([cx, cy - 1]);
+                if (cy < height - 1) stack.push([cx, cy + 1]);
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        saveUndoState();
+    }
+
+    // Пипетка (взять цвет с холста)
+    function pickColorAt(x, y) {
+        const px = Math.max(0, Math.min(canvas.width - 1, Math.floor(x)));
+        const py = Math.max(0, Math.min(canvas.height - 1, Math.floor(y)));
+        const pixel = ctx.getImageData(px, py, 1, 1).data;
+        const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+        state.brushColor = hex;
+        customColorPicker.value = hex;
+        colorSwatches.forEach(b => {
+            b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
+            b.classList.add('border-transparent');
+        });
+        setActiveTool('brush');
+    }
+
     function startStroke(e) {
-        if (!state.isMyTurnDrawing) return;
+        if (!state.isMyTurnDrawing || state.stamp.active) return;
         e.preventDefault();
-        state.isDrawing = true;
         const pos = getCanvasCoords(e);
+
+        if (state.tool === 'pipette') {
+            pickColorAt(pos.x, pos.y);
+            return;
+        }
+
+        if (state.tool === 'fill') {
+            floodFill(pos.x, pos.y, state.brushColor);
+            return;
+        }
+
+        state.isDrawing = true;
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
         ctx.lineCap = 'round';
@@ -218,7 +349,7 @@
     }
 
     function moveStroke(e) {
-        if (!state.isMyTurnDrawing || !state.isDrawing) return;
+        if (!state.isMyTurnDrawing || !state.isDrawing || state.stamp.active) return;
         e.preventDefault();
         const pos = getCanvasCoords(e);
         ctx.lineWidth = state.brushSize;
@@ -244,19 +375,33 @@
 
     function setActiveTool(toolName) {
         state.tool = toolName;
-        if (toolName === 'brush') {
-            toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
-            toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition';
+        const buttons = [
+            { el: toolBrushBtn, name: 'brush' },
+            { el: toolFillBtn, name: 'fill' },
+            { el: toolPipetteBtn, name: 'pipette' },
+            { el: toolEraserBtn, name: 'eraser' }
+        ];
+
+        buttons.forEach(item => {
+            if (item.name === toolName) {
+                item.el.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
+            } else {
+                item.el.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition';
+            }
+        });
+
+        if (toolName === 'fill' || toolName === 'pipette') {
+            canvas.style.cursor = 'crosshair';
+            customBrushDot.style.display = 'none';
         } else {
-            toolEraserBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1.5 transition';
-            toolBrushBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 transition';
+            canvas.style.cursor = 'none';
         }
     }
 
     colorSwatches.forEach(btn => {
         btn.addEventListener('click', () => {
             state.brushColor = btn.getAttribute('data-color');
-            setActiveTool('brush');
+            if (state.tool === 'eraser' || state.tool === 'pipette') setActiveTool('brush');
             colorSwatches.forEach(b => {
                 b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
                 b.classList.add('border-transparent');
@@ -268,7 +413,7 @@
 
     customColorPicker.addEventListener('input', (e) => {
         state.brushColor = e.target.value;
-        setActiveTool('brush');
+        if (state.tool === 'eraser' || state.tool === 'pipette') setActiveTool('brush');
         colorSwatches.forEach(b => {
             b.classList.remove('border-white', 'ring-2', 'ring-indigo-500');
             b.classList.add('border-transparent');
@@ -281,6 +426,8 @@
     });
 
     toolBrushBtn.addEventListener('click', () => setActiveTool('brush'));
+    toolFillBtn.addEventListener('click', () => setActiveTool('fill'));
+    toolPipetteBtn.addEventListener('click', () => setActiveTool('pipette'));
     toolEraserBtn.addEventListener('click', () => setActiveTool('eraser'));
 
     undoBtn.addEventListener('click', () => {
@@ -294,6 +441,144 @@
         fillCanvasWhite();
         saveUndoState();
     });
+
+    // ================= ЛОГИКА ВСТАВКИ КАРТИНКИ ("ШТАМП") =================
+    function renderStampOverlay() {
+        stampCtx.clearRect(0, 0, stampOverlayCanvas.width, stampOverlayCanvas.height);
+        if (!state.stamp.active || !state.stamp.img) return;
+
+        const { img, x, y, scale, rotation } = state.stamp;
+        const w = img.width * scale;
+        const h = img.height * scale;
+
+        stampCtx.save();
+        stampCtx.translate(x, y);
+        stampCtx.rotate((rotation * Math.PI) / 180);
+
+        // Рисуем саму картинку
+        stampCtx.drawImage(img, -w / 2, -h / 2, w, h);
+
+        // Рисуем пунктирную рамку вокруг картинки для наглядности
+        stampCtx.strokeStyle = '#4f46e5';
+        stampCtx.lineWidth = 3;
+        stampCtx.setLineDash([10, 6]);
+        stampCtx.strokeRect(-w / 2, -h / 2, w, h);
+
+        stampCtx.restore();
+    }
+
+    function openStampMode(img) {
+        // Подгоняем начальный масштаб, чтобы картинка адекватно поместилась на холст
+        const maxInitW = canvas.width * 0.55;
+        const maxInitH = canvas.height * 0.55;
+        const ratio = Math.min(maxInitW / img.width, maxInitH / img.height, 1);
+
+        state.stamp.active = true;
+        state.stamp.img = img;
+        state.stamp.x = canvas.width / 2;
+        state.stamp.y = canvas.height / 2;
+        state.stamp.scale = ratio;
+        state.stamp.rotation = 0;
+
+        const percent = Math.round(ratio * 100);
+        stampScaleSlider.value = percent;
+        stampScaleLabel.textContent = `${percent}%`;
+        stampRotateSlider.value = 0;
+        stampRotateLabel.textContent = `0°`;
+
+        stampOverlayCanvas.classList.remove('hidden');
+        stampControlPanel.classList.remove('hidden');
+        drawingToolbar.classList.add('hidden');
+        customBrushDot.style.display = 'none';
+
+        renderStampOverlay();
+    }
+
+    function closeStampMode() {
+        state.stamp.active = false;
+        state.stamp.img = null;
+        stampCtx.clearRect(0, 0, stampOverlayCanvas.width, stampOverlayCanvas.height);
+        stampOverlayCanvas.classList.add('hidden');
+        stampControlPanel.classList.add('hidden');
+        if (state.isMyTurnDrawing) {
+            drawingToolbar.classList.remove('hidden');
+        }
+    }
+
+    insertImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const img = new Image();
+            img.onload = () => openStampMode(img);
+            img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    });
+
+    stampScaleSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        state.stamp.scale = val / 100;
+        stampScaleLabel.textContent = `${val}%`;
+        renderStampOverlay();
+    });
+
+    stampRotateSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        state.stamp.rotation = val;
+        stampRotateLabel.textContent = `${val}°`;
+        renderStampOverlay();
+    });
+
+    function startStampDrag(e) {
+        if (!state.stamp.active) return;
+        e.preventDefault();
+        const pos = getCanvasCoords(e, stampOverlayCanvas);
+        state.stamp.isDragging = true;
+        state.stamp.dragOffsetX = pos.x - state.stamp.x;
+        state.stamp.dragOffsetY = pos.y - state.stamp.y;
+    }
+
+    function moveStampDrag(e) {
+        if (!state.stamp.active || !state.stamp.isDragging) return;
+        e.preventDefault();
+        const pos = getCanvasCoords(e, stampOverlayCanvas);
+        state.stamp.x = pos.x - state.stamp.dragOffsetX;
+        state.stamp.y = pos.y - state.stamp.dragOffsetY;
+        renderStampOverlay();
+    }
+
+    function endStampDrag() {
+        state.stamp.isDragging = false;
+    }
+
+    stampOverlayCanvas.addEventListener('mousedown', startStampDrag);
+    stampOverlayCanvas.addEventListener('mousemove', moveStampDrag);
+    window.addEventListener('mouseup', endStampDrag);
+    stampOverlayCanvas.addEventListener('touchstart', startStampDrag, { passive: false });
+    stampOverlayCanvas.addEventListener('touchmove', moveStampDrag, { passive: false });
+    window.addEventListener('touchend', endStampDrag);
+
+    cancelStampBtn.addEventListener('click', closeStampMode);
+
+    applyStampBtn.addEventListener('click', () => {
+        if (!state.stamp.active || !state.stamp.img) return;
+        const { img, x, y, scale, rotation } = state.stamp;
+        const w = img.width * scale;
+        const h = img.height * scale;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.restore();
+
+        saveUndoState();
+        closeStampMode();
+    });
+    // ===================================================================
 
     openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
     closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
@@ -446,6 +731,7 @@
         canvas.classList.add('canvas-editing');
         emptyCanvasOverlay.classList.add('hidden');
 
+        setActiveTool('brush');
         fillCanvasWhite();
         saveUndoState();
 
@@ -474,6 +760,7 @@
     });
 
     function finishDrawingSession() {
+        closeStampMode();
         state.isMyTurnDrawing = false;
         window.onbeforeunload = null;
         clearInterval(state.drawingInterval);
@@ -490,7 +777,12 @@
         finalPublishBtn.disabled = true;
         finalPublishBtn.textContent = 'Публикуем...';
 
-        const imageDataUrl = canvas.toDataURL('image/png');
+        // Сжимаем итоговый холст в JPEG 0.88 (или PNG если легкий), чтобы даже сложные фото гарантированно укладывались в лимит 800 КБ
+        let imageDataUrl = canvas.toDataURL('image/png');
+        if (imageDataUrl.length > 750000) {
+            imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        }
+
         const b = state.bookingData;
 
         const { data, error } = await supabaseClient.rpc('publish_canvas', {
@@ -766,7 +1058,6 @@
             }
         });
 
-    // Подписка на изменения таблиц базы данных
     supabaseClient
         .channel('realtime:tsar_channel_secure')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
