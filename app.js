@@ -28,7 +28,7 @@
 
         brushColor: '#0f172a',
         brushSize: 8,
-        tool: 'brush', // 'brush' | 'eraser' | 'fill' | 'pipette'
+        tool: 'brush',
         isDrawing: false,
         undoStack: [],
 
@@ -145,7 +145,6 @@
 
     let uploadedAvatarBase64 = null;
 
-    // Шаг аукциона +5% (минимум +1 ₽), ручной выбор от +5% до +25%
     function calculateAuctionPrices(basePrice) {
         const autoPrice = Math.max(Math.ceil(basePrice * 1.05), basePrice + 1);
         const maxPrice = Math.max(Math.ceil(basePrice * 1.25), autoPrice);
@@ -796,7 +795,6 @@
         await syncFromDatabase();
     });
 
-    // Запрещаем выбирать скрытые модерацией работы как основу из истории
     chooseBaseArtBtn.addEventListener('click', () => {
         const validHistory = state.history.filter(item => !item.isBanned);
         if (validHistory.length === 0) {
@@ -824,6 +822,16 @@
 
     closeChooseBaseModalBtn.addEventListener('click', () => chooseBaseModal.classList.add('hidden'));
 
+    function clearImmunityUI() {
+        state.immunitySecondsLeft = 0;
+        if (state.immunityInterval) clearInterval(state.immunityInterval);
+        immunityBox.classList.add('hidden');
+        canvasShieldBadge.classList.add('hidden');
+        canvas.classList.remove('canvas-shielded');
+        if (!state.isMyTurnDrawing) canvas.classList.add('canvas-default');
+        updateMainButtonState();
+    }
+
     function startImmunityTimer(targetTimestamp) {
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
@@ -832,13 +840,7 @@
             const diff = Math.floor((targetTimestamp - now) / 1000);
 
             if (diff <= 0) {
-                state.immunitySecondsLeft = 0;
-                clearInterval(state.immunityInterval);
-                immunityBox.classList.add('hidden');
-                canvasShieldBadge.classList.add('hidden');
-                canvas.classList.remove('canvas-shielded');
-                if (!state.isMyTurnDrawing) canvas.classList.add('canvas-default');
-                updateMainButtonState();
+                clearImmunityUI();
             } else {
                 state.immunitySecondsLeft = diff;
                 immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
@@ -959,7 +961,7 @@
             .from('canvas_history')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(20);
+            .limit(25);
 
         if (error) {
             console.error('Ошибка Supabase:', error);
@@ -967,30 +969,36 @@
         }
 
         if (data && data.length > 0) {
-            state.history = data.map(row => {
-                const date = new Date(row.created_at);
-                const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                return {
-                    id: row.id,
-                    name: row.author_name,
-                    social: row.author_link,
-                    avatar: row.author_avatar,
-                    price: row.price,
-                    nextPrice: row.next_price,
-                    shieldUntil: row.shield_until,
-                    likes: row.likes || 0,
-                    isBanned: Boolean(row.is_banned),
-                    timeStr: timeStr,
-                    imageDataUrl: row.image_data
-                };
-            });
-
-            // Цена следующей ставки берется от самой последней записи (даже если ее забанили)
-            const latestEntry = state.history[0];
-            state.currentPrice = latestEntry.nextPrice;
+            // Цена аукциона всегда берется от самой свежей записи в базе
+            state.currentPrice = data[0].next_price;
             headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
 
-            // На главный холст и в шапку Царя выводим последнюю НЕ забаненную работу
+            const latestWasModerated = Boolean(data[0].is_banned) || Boolean(data[0].is_hidden) || (data[0].image_data && data[0].image_data.startsWith('data:image/svg+xml'));
+
+            // В правую табличку берем только НЕ скрытые записи (максимум 20 штук)
+            state.history = data
+                .filter(row => !row.is_hidden)
+                .slice(0, 20)
+                .map(row => {
+                    const date = new Date(row.created_at);
+                    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    const isSvgBanned = row.image_data && row.image_data.startsWith('data:image/svg+xml');
+                    return {
+                        id: row.id,
+                        name: row.author_name,
+                        social: row.author_link,
+                        avatar: row.author_avatar,
+                        price: row.price,
+                        nextPrice: row.next_price,
+                        shieldUntil: row.shield_until,
+                        likes: row.likes || 0,
+                        isBanned: Boolean(row.is_banned) || isSvgBanned,
+                        timeStr: timeStr,
+                        imageDataUrl: row.image_data
+                    };
+                });
+
+            // На главный холст ставим последнюю НЕ забаненную работу
             const king = state.history.find(item => !item.isBanned);
             state.currentKing = king || null;
 
@@ -1023,21 +1031,23 @@
                 }
 
                 renderHistory();
-                startImmunityTimer(new Date(king.shieldUntil).getTime());
+
+                // Если последнюю работу снесли модерацией — сразу снимаем щит и разблокируем холст
+                if (latestWasModerated) {
+                    clearImmunityUI();
+                } else {
+                    startImmunityTimer(new Date(king.shieldUntil).getTime());
+                }
             } else {
                 kingName.textContent = 'Никто (холст свободен)';
                 kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
-                immunityBox.classList.add('hidden');
-                canvasShieldBadge.classList.add('hidden');
-                canvas.classList.remove('canvas-shielded');
+                clearImmunityUI();
                 if (!state.isMyTurnDrawing) {
-                    canvas.classList.add('canvas-default');
                     fillCanvasWhite();
                     emptyCanvasOverlay.classList.remove('hidden');
                 }
                 renderHistory();
-                updateMainButtonState();
             }
         } else {
             state.currentPrice = 10;
@@ -1045,16 +1055,15 @@
             kingName.textContent = 'Никто (холст свободен)';
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
+            clearImmunityUI();
             fillCanvasWhite();
             emptyCanvasOverlay.classList.remove('hidden');
             renderHistory();
-            updateMainButtonState();
         }
 
         await checkLockStatus();
     }
 
-    // Реальный онлайн через Supabase Presence
     const sessionUserId = 'user_' + Math.random().toString(36).substring(2, 11);
     const presenceChannel = supabaseClient.channel('online_users', {
         config: {
