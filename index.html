@@ -13,6 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -36,7 +38,7 @@
 
     <!-- Верхний бар -->
     <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-30 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center shadow-md shadow-orange-500/20">
                     <i class="fa-solid fa-crown text-white text-lg"></i>
@@ -49,11 +51,16 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 sm:gap-5">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
                 </div>
+
+                <button type="button" id="toggleSoundBtn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5" title="Звуковые эффекты при захвате трона">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-indigo-500"></i>
+                    <span class="hidden sm:inline" id="soundLabel">Звук вкл</span>
+                </button>
 
                 <div class="bg-amber-50 border border-amber-200/80 rounded-xl px-3.5 py-1.5 flex items-center gap-2">
                     <div>
@@ -70,13 +77,54 @@
         </div>
     </header>
 
-    <!-- Основной контент -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- Основной контент (3 колонки на десктопе) -->
+    <main class="flex-1 max-w-[1400px] w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        <div class="lg:col-span-8 flex flex-col items-center w-full">
+        <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ЧАТ АНОНИМОВ -->
+        <div class="order-2 lg:order-1 lg:col-span-3 flex flex-col w-full">
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col shadow-sm h-[420px] lg:h-[620px]">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 shrink-0">
+                    <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-indigo-500"></i> Чат зрителей
+                    </h3>
+                    <span id="myAnonBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold truncate max-w-[130px]">
+                        Аноним #000
+                    </span>
+                </div>
+
+                <div id="chatMessagesList" class="flex-1 overflow-y-auto py-3 space-y-2 pr-1 text-xs">
+                    <div id="emptyChatText" class="text-center py-10 text-slate-400">
+                        В чате пока тихо.<br>Напиши первым!
+                    </div>
+                </div>
+
+                <form id="chatForm" autocomplete="off" class="pt-2.5 border-t border-slate-100 shrink-0 flex items-center gap-1.5">
+                    <input 
+                        type="text" 
+                        id="chatMessageInput" 
+                        name="canvas_live_chat_msg"
+                        autocomplete="one-time-code"
+                        maxlength="160" 
+                        placeholder="Написать в чат..." 
+                        class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white"
+                    >
+                    <button 
+                        type="submit" 
+                        id="sendChatBtn" 
+                        class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0 transition active:scale-95 disabled:opacity-50"
+                        title="Отправить"
+                    >
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА: ХОЛСТ И УПРАВЛЕНИЕ -->
+        <div class="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center w-full">
             
             <!-- Карточка Царя Горы -->
-            <div id="kingBanner" class="w-full max-w-[820px] mb-4 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
+            <div id="kingBanner" class="w-full mb-4 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3.5">
                         <div id="kingAvatarWrapper" class="w-12 h-12 max-w-[48px] max-h-[48px] rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xl shrink-0 shadow-inner">
@@ -116,7 +164,7 @@
             </div>
 
             <!-- Бейдж режима рисования -->
-            <div id="editingModeNotice" class="hidden w-full max-w-[820px] mb-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between">
+            <div id="editingModeNotice" class="hidden w-full mb-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
                     <span class="font-semibold">Ты захватил холст! Твори свой шедевр.</span>
@@ -128,13 +176,24 @@
             </div>
 
             <!-- Обертка Холста -->
-            <div class="relative w-full max-w-[820px] aspect-[3/2] flex items-center justify-center">
+            <div id="canvasWrapper" class="relative w-full aspect-[3/2] flex items-center justify-center rounded-2xl transition-all duration-500">
                 <canvas 
                     id="mainCanvas" 
                     width="960" 
                     height="640" 
                     class="w-full h-full bg-white rounded-2xl transition-all duration-300 canvas-default"
                 ></canvas>
+
+                <!-- Баннер-вспышка при смене Царя -->
+                <div id="newKingToast" class="hidden pointer-events-none absolute inset-x-4 top-4 z-30 flex justify-center">
+                    <div class="px-4 py-2.5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-amber-400/60 text-white shadow-2xl flex items-center gap-2.5 animate-bounce">
+                        <span class="text-xl">👑</span>
+                        <div class="text-xs sm:text-sm">
+                            <span class="text-amber-400 font-display font-bold block leading-tight">НОВЫЙ ЦАРЬ ХОЛСТА!</span>
+                            <span id="newKingToastText" class="text-slate-200 font-medium">Захватил трон!</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Слой-превью для вставки и трансформации картинки ("Штамп") -->
                 <canvas 
@@ -174,7 +233,7 @@
             </div>
 
             <!-- ПАНЕЛЬ НАСТРОЙКИ ВСТАВЛЕННОЙ КАРТИНКИ -->
-            <div id="stampControlPanel" class="hidden w-full max-w-[820px] mt-4 bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 shadow-lg space-y-3">
+            <div id="stampControlPanel" class="hidden w-full mt-4 bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 shadow-lg space-y-3">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-display font-bold text-indigo-900 flex items-center gap-2">
                         <i class="fa-solid fa-up-down-left-right text-indigo-600"></i>
@@ -209,7 +268,7 @@
             </div>
 
             <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ -->
-            <div id="drawingToolbar" class="hidden w-full max-w-[820px] mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-4">
+            <div id="drawingToolbar" class="hidden w-full mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <button type="button" data-color="#0f172a" class="color-swatch w-7 h-7 rounded-full bg-slate-900 border-2 border-white ring-2 ring-indigo-500 transition transform hover:scale-110" title="Черный"></button>
@@ -276,7 +335,7 @@
             </div>
 
             <!-- ГЛАВНАЯ КНОПКА В РЕЖИМЕ ПРОСМОТРА -->
-            <div id="viewModeControls" class="w-full max-w-[820px] mt-6 flex flex-col items-center">
+            <div id="viewModeControls" class="w-full mt-6 flex flex-col items-center">
                 <button 
                     type="button" 
                     id="startDrawBookingBtn"
@@ -288,18 +347,18 @@
             </div>
         </div>
 
-        <!-- Правая колонка: История Царей Холста -->
-        <div class="lg:col-span-4 flex flex-col gap-5 w-full">
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col shadow-sm">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-display font-bold text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
+        <!-- ПРАВАЯ КОЛОНКА: ИСТОРИЯ ЦАРЕЙ ХОЛСТА -->
+        <div class="order-3 lg:col-span-3 flex flex-col gap-5 w-full">
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col shadow-sm h-[420px] lg:h-[620px]">
+                <div class="flex items-center justify-between mb-2 shrink-0">
+                    <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> История захватов
                     </h3>
                     <span id="historyCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-bold">0</span>
                 </div>
-                <p class="text-xs text-slate-400 mb-3">Показываются последние 20 работ. Кликни для просмотра и лайка</p>
+                <p class="text-[11px] text-slate-400 mb-3 shrink-0">Последние 20 работ. Кликни для просмотра</p>
 
-                <div id="historyList" class="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                <div id="historyList" class="flex-1 space-y-2 overflow-y-auto pr-1">
                     <div id="emptyHistoryText" class="text-center py-10 text-slate-400 text-xs">
                         История пока пуста.<br>Стань первым Царем Холста!
                     </div>
@@ -355,7 +414,7 @@
                         <i class="fa-solid fa-triangle-exclamation"></i> Правила модерации и дисклеймер:
                     </strong>
                     <p>
-                        На холсте и в ссылках <strong>строго запрещены</strong>: контент 18+, экстремизм, запрещенная законодательством РФ символика, оскорбления, реклама казино, наркотиков и мошеннических ресурсов.
+                        На холсте, в чате и в ссылках <strong>строго запрещены</strong>: контент 18+, экстремизм, запрещенная законодательством РФ символика, оскорбления, реклама казино, наркотиков и мошеннических ресурсов.
                     </p>
                     <p>
                         Администрация оставляет за собой право в любой момент скрыть работу за нарушение правил с заменой на заглушку <strong>без возврата уплаченных средств</strong>. В случае закрытия вкладки или истечения 20 минут оплата также не возвращается.
@@ -573,11 +632,11 @@
 
     <!-- ПОДВАЛ С РЕКВИЗИТАМИ И ОФЕРТОЙ -->
     <footer class="border-t border-slate-200 bg-white py-6 text-xs text-slate-500 mt-8">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-center sm:text-left space-y-1">
                 <div class="font-bold text-slate-700">Царь Холста (king-canvas.online)</div>
-                <div>Самозанятый: <strong>Галкин Владислав Николаевич</strong> • ИНН: <strong>423601601044</strong></div>
-                <div>Связь и поддержка: <a href="https://t.me/chyt2_popozje" target="_blank" class="text-indigo-600 hover:underline">@chyt2_popozje</a> • <a href="mailto:vlads42prod@gmail.com" class="text-indigo-600 hover:underline">vlads42prod@gmail.com</a></div>
+                <div>Самозанятый (плательщик НПД): <strong>Галкин Владислав Николаевич</strong> • ИНН: <strong>423601601044</strong></div>
+                <div>Связь и поддержка: <a href="mailto:vladik32112@yandex.ru" class="text-indigo-600 hover:underline">vladik32112@yandex.ru</a></div>
             </div>
 
             <div class="flex flex-wrap items-center justify-center gap-4 font-medium text-slate-600">
@@ -611,7 +670,7 @@
                 2.3. Услуга считается оказанной в полном объеме с момента предоставления Заказчику доступа к графическому редактору после подтверждения оплаты платежным шлюзом.</p>
 
                 <p><strong>3. Правила размещения контента и модерация</strong><br>
-                3.1. Заказчик обязуется не размещать на холсте, в имени или в прикрепляемых ссылках информацию, нарушающую законодательство РФ, включая: материалы 18+, экстремизм, пропаганду запрещенных веществ, азартных игр, оскорбления, спам, фишинговые и мошеннические ресурсы, а также контент, нарушающий авторские права третьих лиц.<br>
+                3.1. Заказчик обязуется не размещать на холсте, в чате, в имени или в прикрепляемых ссылках информацию, нарушающую законодательство РФ, включая: материалы 18+, экстремизм, пропаганду запрещенных веществ, азартных игр, оскорбления, спам, фишинговые и мошеннические ресурсы, а также контент, нарушающий авторские права третьих лиц.<br>
                 3.2. В случае выявления нарушений Исполнитель вправе в одностороннем порядке скрыть изображение и ссылку Заказчика с заменой на информационную заглушку без предварительного уведомления.</p>
 
                 <p><strong>4. Порядок оплаты и возврата средств</strong><br>
@@ -621,7 +680,7 @@
                 <p><strong>5. Реквизиты Исполнителя</strong><br>
                 Плательщик НПД: Галкин Владислав Николаевич<br>
                 ИНН: 423601601044<br>
-                Контактный email: vlads42prod@gmail.com</p>
+                Контактный email: vladik32112@yandex.ru</p>
             </div>
 
             <div class="pt-3 border-t border-slate-100 shrink-0">

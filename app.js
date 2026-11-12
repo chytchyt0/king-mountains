@@ -4,7 +4,20 @@
     const PAY_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/yookassa-pay`;
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Генерация постоянного анонимного ника для вкладки
+    let savedAnonName = sessionStorage.getItem('tsar_anon_name');
+    if (!savedAnonName) {
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        savedAnonName = `Аноним #${randomNum}`;
+        sessionStorage.setItem('tsar_anon_name', savedAnonName);
+    }
+
     const state = {
+        anonName: savedAnonName,
+        soundEnabled: localStorage.getItem('tsar_sound_enabled') !== 'false',
+        lastKnownKingId: null,
+        initialSyncDone: false,
+
         currentPrice: 10,
         autoNextPrice: 11,
         customMinPrice: 11,
@@ -25,6 +38,7 @@
 
         currentKing: null,
         history: [],
+        chatMessages: [],
         currentlyViewedArt: null,
         likedIds: JSON.parse(localStorage.getItem('tsar_liked_ids') || '[]'),
 
@@ -47,10 +61,24 @@
         }
     };
 
+    const canvasWrapper = document.getElementById('canvasWrapper');
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const stampOverlayCanvas = document.getElementById('stampOverlayCanvas');
     const stampCtx = stampOverlayCanvas.getContext('2d');
+    const newKingToast = document.getElementById('newKingToast');
+    const newKingToastText = document.getElementById('newKingToastText');
+
+    const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundLabel = document.getElementById('soundLabel');
+
+    const myAnonBadge = document.getElementById('myAnonBadge');
+    const chatMessagesList = document.getElementById('chatMessagesList');
+    const emptyChatText = document.getElementById('emptyChatText');
+    const chatForm = document.getElementById('chatForm');
+    const chatMessageInput = document.getElementById('chatMessageInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
 
     const customBrushDot = document.getElementById('customBrushDot');
     const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
@@ -156,6 +184,103 @@
     const emptyHistoryText = document.getElementById('emptyHistoryText');
 
     let uploadedAvatarBase64 = null;
+    myAnonBadge.textContent = state.anonName;
+
+    // ================= ЗВУК И КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
+    let audioCtx = null;
+    function unlockAudio() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+
+    function updateSoundButtonUI() {
+        if (state.soundEnabled) {
+            soundIcon.className = 'fa-solid fa-volume-high text-indigo-500';
+            soundLabel.textContent = 'Звук вкл';
+        } else {
+            soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+            soundLabel.textContent = 'Без звука';
+        }
+    }
+    updateSoundButtonUI();
+
+    toggleSoundBtn.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        localStorage.setItem('tsar_sound_enabled', state.soundEnabled);
+        updateSoundButtonUI();
+        if (state.soundEnabled) {
+            unlockAudio();
+            playFanfareSound();
+        }
+    });
+
+    // Торжественный 2-секундный аккорд победы (фанфары + звон)
+    function playFanfareSound() {
+        if (!state.soundEnabled) return;
+        try {
+            unlockAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = idx === 3 ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+
+                gain.gain.setValueAtTime(0.001, now + idx * 0.11);
+                gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.11 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.11 + 1.4);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now + idx * 0.11);
+                osc.stop(now + idx * 0.11 + 1.5);
+            });
+        } catch (e) {
+            console.warn('Audio error:', e);
+        }
+    }
+
+    function triggerNewKingCelebration(king) {
+        playFanfareSound();
+
+        // Залп конфетти с двух сторон экрана
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 75,
+                angle: 60,
+                spread: 65,
+                origin: { x: 0.15, y: 0.65 }
+            });
+            confetti({
+                particleCount: 75,
+                angle: 120,
+                spread: 65,
+                origin: { x: 0.85, y: 0.65 }
+            });
+        }
+
+        // Золотое свечение вокруг холста и тост-плашка
+        canvasWrapper.classList.add('ring-4', 'ring-amber-400', 'shadow-2xl');
+        newKingToastText.textContent = `${king.name} занял трон за ${king.price} ₽!`;
+        newKingToast.classList.remove('hidden');
+
+        setTimeout(() => {
+            canvasWrapper.classList.remove('ring-4', 'ring-amber-400', 'shadow-2xl');
+            newKingToast.classList.add('hidden');
+        }, 4500);
+    }
+    // =================================================================
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -166,6 +291,87 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
+
+    // ================= ЖИВОЙ ЧАТ АНОНИМОВ =================
+    function renderChat() {
+        chatMessagesList.innerHTML = '';
+
+        if (state.chatMessages.length === 0) {
+            emptyChatText.classList.remove('hidden');
+            chatMessagesList.appendChild(emptyChatText);
+            return;
+        }
+        emptyChatText.classList.add('hidden');
+
+        state.chatMessages.forEach(msg => {
+            const isMe = msg.sender_name === state.anonName || (state.isMyTurnDrawing && msg.is_king);
+            const row = document.createElement('div');
+            row.className = `p-2 rounded-xl border ${
+                msg.is_king 
+                    ? 'bg-amber-50/70 border-amber-200' 
+                    : isMe 
+                        ? 'bg-indigo-50/60 border-indigo-100' 
+                        : 'bg-slate-50 border-slate-100'
+            }`;
+
+            const date = new Date(msg.created_at);
+            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const crownHtml = msg.is_king ? '<span title="Царь Холста">👑 </span>' : '';
+            const nameColor = msg.is_king ? 'text-amber-700' : isMe ? 'text-indigo-700' : 'text-slate-700';
+
+            row.innerHTML = `
+                <div class="flex items-center justify-between gap-1 mb-0.5">
+                    <span class="font-bold text-[11px] ${nameColor} truncate">${crownHtml}${escapeHtml(msg.sender_name)}</span>
+                    <span class="text-[10px] text-slate-400 shrink-0">${timeStr}</span>
+                </div>
+                <p class="text-slate-800 break-words leading-snug">${escapeHtml(msg.message)}</p>
+            `;
+            chatMessagesList.appendChild(row);
+        });
+
+        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+    }
+
+    async function loadChatMessages() {
+        const { data, error } = await supabaseClient
+            .from('canvas_chat')
+            .select('id, sender_name, message, is_king, created_at')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (!error && data) {
+            state.chatMessages = data.reverse();
+            renderChat();
+        }
+    }
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = chatMessageInput.value.trim();
+        if (!text) return;
+
+        sendChatBtn.disabled = true;
+        const senderDisplay = state.isMyTurnDrawing && state.bookingData?.name
+            ? state.bookingData.name
+            : state.anonName;
+
+        const { data, error } = await supabaseClient.rpc('send_chat_message', {
+            p_sender_name: senderDisplay,
+            p_message: text,
+            p_is_king: state.isMyTurnDrawing
+        });
+
+        sendChatBtn.disabled = false;
+
+        if (error || !data || !data.ok) {
+            alert(data?.error || 'Не удалось отправить сообщение');
+            return;
+        }
+
+        chatMessageInput.value = '';
+        await loadChatMessages();
+    });
+    // ========================================================
 
     function calculateAuctionPrices(basePrice) {
         const autoPrice = Math.max(Math.ceil(basePrice * 1.05), basePrice + 1);
@@ -714,7 +920,6 @@
         updateMainButtonState();
     }
 
-    // Запуск режима рисования после подтвержденной оплаты
     function activatePaidDrawingSession(order, remainingSeconds = 1200) {
         state.bookingData = {
             name: order.author_name,
@@ -757,7 +962,6 @@
         }, 1000);
     }
 
-    // Проверка токена заказа после возврата со страницы ЮKassa
     async function checkReturnedPaymentOrder() {
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromUrl = urlParams.get('order_token');
@@ -766,12 +970,10 @@
 
         if (!token) return;
 
-        // Очищаем ?order_token=... из адресной строки
         if (tokenFromUrl) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Проверяем до 5 раз с паузой 1.5 сек (на случай задержки вебхука от ЮKassa)
         for (let attempt = 0; attempt < 5; attempt++) {
             try {
                 const res = await fetch(PAY_FUNCTION_URL, {
@@ -789,7 +991,6 @@
                     state.orderToken = token;
                     localStorage.setItem('tsar_pending_order_token', token);
 
-                    // Считаем точный остаток времени замка в базе
                     const { data: lockData } = await supabaseClient
                         .from('canvas_lock')
                         .select('locked_until')
@@ -821,7 +1022,6 @@
         }
     }
 
-    // Отправка на оплату в ЮKassa
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         submitBookingBtn.disabled = true;
@@ -1049,27 +1249,27 @@
         state.history.forEach((item) => {
             const isTop = item.id === currentKingId && !item.isBanned;
             const card = document.createElement('div');
-            card.className = `flex items-center gap-3 p-2.5 rounded-xl border transition cursor-pointer hover:border-indigo-400 bg-white ${
+            card.className = `flex items-center gap-2.5 p-2 rounded-xl border transition cursor-pointer hover:border-indigo-400 bg-white ${
                 isTop ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
             }`;
 
             const avatarHtml = item.avatar 
-                ? `<img src="${item.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-200">`
-                : `<div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
+                ? `<img src="${item.avatar}" class="w-7 h-7 rounded-full object-cover border border-slate-200">`
+                : `<div class="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
 
             const subText = item.isBanned 
                 ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
                 : escapeHtml(item.social || 'без ссылки');
 
             card.innerHTML = `
-                <img src="${item.imageDataUrl}" class="w-14 h-10 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
+                <img src="${item.imageDataUrl}" class="w-12 h-9 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
                 <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1">
                         ${avatarHtml}
                         <span class="text-xs font-bold text-slate-800 truncate">${escapeHtml(item.name)}</span>
-                        ${isTop ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">Царь</span>' : ''}
+                        ${isTop ? '<span class="text-[9px] px-1 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">Царь</span>' : ''}
                     </div>
-                    <span class="text-[11px] text-slate-400 truncate block mt-0.5">${subText}</span>
+                    <span class="text-[10px] text-slate-400 truncate block mt-0.5">${subText}</span>
                 </div>
                 <div class="text-right shrink-0">
                     <span class="font-display font-bold text-xs text-emerald-600 block">${item.price} ₽</span>
@@ -1127,6 +1327,12 @@
             state.currentKing = king || null;
 
             if (king) {
+                // Запускаем конфетти и звук, если появился НОВЫЙ Царь после загрузки страницы
+                if (state.initialSyncDone && state.lastKnownKingId !== null && king.id !== state.lastKnownKingId && !latestWasModerated) {
+                    triggerNewKingCelebration(king);
+                }
+                state.lastKnownKingId = king.id;
+
                 kingName.textContent = king.name;
                 kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
                 kingPriceBadge.classList.remove('hidden');
@@ -1162,6 +1368,7 @@
                     startImmunityTimer(new Date(king.shieldUntil).getTime());
                 }
             } else {
+                state.lastKnownKingId = null;
                 kingName.textContent = 'Никто (холст свободен)';
                 kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
@@ -1173,6 +1380,7 @@
                 renderHistory();
             }
         } else {
+            state.lastKnownKingId = null;
             state.currentPrice = 10;
             headerCurrentPrice.textContent = '10 ₽';
             kingName.textContent = 'Никто (холст свободен)';
@@ -1184,6 +1392,7 @@
             renderHistory();
         }
 
+        state.initialSyncDone = true;
         await checkLockStatus();
     }
 
@@ -1218,8 +1427,13 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_lock' }, () => {
             checkLockStatus();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_chat' }, () => {
+            loadChatMessages();
+        })
         .subscribe();
 
     setInterval(checkLockStatus, 2000);
+    setInterval(loadChatMessages, 4000);
+    loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();
