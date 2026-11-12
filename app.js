@@ -79,6 +79,9 @@
     const chatForm = document.getElementById('chatForm');
     const chatMessageInput = document.getElementById('chatMessageInput');
     const sendChatBtn = document.getElementById('sendChatBtn');
+    const toggleEmojiBtn = document.getElementById('toggleEmojiBtn');
+    const emojiPickerPopup = document.getElementById('emojiPickerPopup');
+    const emojiBtns = document.querySelectorAll('.emoji-btn');
 
     const customBrushDot = document.getElementById('customBrushDot');
     const emptyCanvasOverlay = document.getElementById('emptyCanvasOverlay');
@@ -187,12 +190,11 @@
     myAnonBadge.textContent = state.anonName;
 
     // ================= ЗВУК И КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
-    const winSound = new Audio('zvuk1.mp3');
+    const winSound = new Audio('fanfare.mp3');
     winSound.preload = 'auto';
-    winSound.volume = 0.8; // Громкость от 0.1 до 1.0
+    winSound.volume = 0.8;
 
     function unlockAudio() {
-        // Разблокируем автовоспроизведение аудио в браузере при первом клике
         winSound.play().then(() => {
             winSound.pause();
             winSound.currentTime = 0;
@@ -233,7 +235,6 @@
     function triggerNewKingCelebration(king) {
         playFanfareSound();
 
-        // Залп конфетти с двух сторон экрана
         if (typeof confetti === 'function') {
             confetti({
                 particleCount: 75,
@@ -249,7 +250,6 @@
             });
         }
 
-        // Золотое свечение вокруг холста и тост-плашка
         canvasWrapper.classList.add('ring-4', 'ring-amber-400', 'shadow-2xl');
         newKingToastText.textContent = `${king.name} занял трон за ${king.price} ₽!`;
         newKingToast.classList.remove('hidden');
@@ -271,7 +271,29 @@
             .replace(/'/g, '&#039;');
     }
 
-    // ================= ЖИВОЙ ЧАТ АНОНИМОВ =================
+    // ================= ЖИВОЙ ЧАТ И СМАЙЛЫ =================
+    toggleEmojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        emojiPickerPopup.classList.toggle('hidden');
+    });
+
+    emojiBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const emoji = btn.textContent;
+            if (chatMessageInput.value.length + emoji.length <= 160) {
+                chatMessageInput.value += emoji;
+            }
+            chatMessageInput.focus();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!emojiPickerPopup.contains(e.target) && e.target !== toggleEmojiBtn) {
+            emojiPickerPopup.classList.add('hidden');
+        }
+    });
+
     function renderChat() {
         chatMessagesList.innerHTML = '';
 
@@ -328,9 +350,10 @@
         e.preventDefault();
         const text = chatMessageInput.value.trim();
         if (!text) return;
-emojiPickerPopup.classList.add('hidden'); 
 
+        emojiPickerPopup.classList.add('hidden');
         sendChatBtn.disabled = true;
+
         const senderDisplay = state.isMyTurnDrawing && state.bookingData?.name
             ? state.bookingData.name
             : state.anonName;
@@ -344,40 +367,11 @@ emojiPickerPopup.classList.add('hidden');
         sendChatBtn.disabled = false;
 
         if (error || !data || !data.ok) {
-            alert(data?.error || 'Не удалось отправить сообщение');
+            alert(data?.error || error?.message || 'Не удалось отправить сообщение');
             return;
         }
 
         chatMessageInput.value = '';
-
-// ================= ПАНЕЛЬ СМАЙЛОВ В ЧАТЕ =================
-    const toggleEmojiBtn = document.getElementById('toggleEmojiBtn');
-    const emojiPickerPopup = document.getElementById('emojiPickerPopup');
-    const emojiBtns = document.querySelectorAll('.emoji-btn');
-
-    toggleEmojiBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        emojiPickerPopup.classList.toggle('hidden');
-    });
-
-    emojiBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const emoji = btn.textContent;
-            if (chatMessageInput.value.length + emoji.length <= 160) {
-                chatMessageInput.value += emoji;
-            }
-            chatMessageInput.focus();
-        });
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!emojiPickerPopup.contains(e.target) && e.target !== toggleEmojiBtn) {
-            emojiPickerPopup.classList.add('hidden');
-        }
-    });
-
-
         await loadChatMessages();
     });
     // ========================================================
@@ -1336,7 +1330,6 @@ emojiPickerPopup.classList.add('hidden');
             state.currentKing = king || null;
 
             if (king) {
-                // Запускаем конфетти и звук, если появился НОВЫЙ Царь после загрузки страницы
                 if (state.initialSyncDone && state.lastKnownKingId !== null && king.id !== state.lastKnownKingId && !latestWasModerated) {
                     triggerNewKingCelebration(king);
                 }
