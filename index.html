@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Царь Холста — Битва за Трон</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -50,14 +51,9 @@
             </div>
 
             <div class="flex items-center gap-3 sm:gap-5">
-                <div class="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
-                </div>
-
-                <div class="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
-                    <i class="fa-regular fa-eye text-slate-500"></i>
-                    <span>Просмотров: <strong id="statViews" class="text-slate-800">1</strong></span>
                 </div>
 
                 <div class="bg-amber-50 border border-amber-200/80 rounded-xl px-3.5 py-1.5 flex items-center gap-2">
@@ -483,22 +479,12 @@
                 <img id="viewArtImage" src="" alt="Рисунок автора" class="w-full h-full object-contain">
             </div>
 
-            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                <div class="flex items-center gap-4">
-                    <button type="button" id="likeArtBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center gap-2 transition active:scale-95">
-                        <i id="likeArtIcon" class="fa-regular fa-heart text-sm"></i>
-                        <span id="likeArtCount">0</span>
-                    </button>
-                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <i class="fa-regular fa-eye"></i>
-                        <span id="viewArtViewsCount">1</span> просмотров
-                    </div>
-                </div>
-
-                <button type="button" id="useAsBaseFromModalBtn" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-2 transition">
-                    <i class="fa-solid fa-paintbrush"></i>
-                    <span>Использовать как основу для нового рисунка</span>
+            <div class="mt-4 flex items-center justify-between pt-3 border-t border-slate-100">
+                <button type="button" id="likeArtBtn" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center gap-2 transition active:scale-95">
+                    <i id="likeArtIcon" class="fa-regular fa-heart text-sm"></i>
+                    <span id="likeArtCount">0</span>
                 </button>
+                <span class="text-xs text-slate-400">Понравилась работа? Поставь лайк автору</span>
             </div>
         </div>
     </div>

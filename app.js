@@ -44,6 +44,7 @@
     const editingModeNotice = document.getElementById('editingModeNotice');
     const drawingTimerText = document.getElementById('drawingTimerText');
 
+    const statOnlineEl = document.getElementById('statOnline');
     const headerCurrentPrice = document.getElementById('headerCurrentPrice');
     const kingName = document.getElementById('kingName');
     const kingPriceBadge = document.getElementById('kingPriceBadge');
@@ -107,8 +108,6 @@
     const likeArtBtn = document.getElementById('likeArtBtn');
     const likeArtIcon = document.getElementById('likeArtIcon');
     const likeArtCount = document.getElementById('likeArtCount');
-    const viewArtViewsCount = document.getElementById('viewArtViewsCount');
-    const useAsBaseFromModalBtn = document.getElementById('useAsBaseFromModalBtn');
 
     const chooseBaseModal = document.getElementById('chooseBaseModal');
     const closeChooseBaseModalBtn = document.getElementById('closeChooseBaseModalBtn');
@@ -576,7 +575,6 @@
         viewArtPrice.textContent = `${art.price} ₽`;
         viewArtTime.textContent = art.timeStr;
         viewArtImage.src = art.imageDataUrl;
-        viewArtViewsCount.textContent = (art.views || 1) + 1;
         likeArtCount.textContent = art.likes || 0;
 
         const alreadyLiked = state.likedIds.includes(art.id);
@@ -620,17 +618,6 @@
         if (art.id) {
             await supabaseClient.rpc('increment_like', { p_art_id: art.id });
         }
-    });
-
-    useAsBaseFromModalBtn.addEventListener('click', () => {
-        if (!state.isMyTurnDrawing) {
-            alert('Сначала забронируй холст через кнопку "Нарисовать свое", а затем выбери этот рисунок как основу!');
-            return;
-        }
-        drawImageFromDataUrl(state.currentlyViewedArt.imageDataUrl, () => {
-            saveUndoState();
-            viewArtModal.classList.add('hidden');
-        });
     });
 
     function renderHistory() {
@@ -701,7 +688,6 @@
                     nextPrice: row.next_price,
                     shieldUntil: row.shield_until,
                     likes: row.likes || 0,
-                    views: row.views || 1,
                     timeStr: timeStr,
                     imageDataUrl: row.image_data
                 };
@@ -756,6 +742,31 @@
         await checkLockStatus();
     }
 
+    // Реальный счетчик онлайна через Supabase Presence
+    const sessionUserId = 'user_' + Math.random().toString(36).substring(2, 11);
+    const presenceChannel = supabaseClient.channel('online_users', {
+        config: {
+            presence: {
+                key: sessionUserId
+            }
+        }
+    });
+
+    presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+            const presenceState = presenceChannel.presenceState();
+            const activeUsersCount = Object.keys(presenceState).length;
+            statOnlineEl.textContent = Math.max(activeUsersCount, 1);
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await presenceChannel.track({
+                    online_at: new Date().toISOString()
+                });
+            }
+        });
+
+    // Подписка на изменения таблиц базы данных
     supabaseClient
         .channel('realtime:tsar_channel_secure')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
@@ -767,11 +778,5 @@
         .subscribe();
 
     setInterval(checkLockStatus, 2000);
-
-    let viewsCount = parseInt(localStorage.getItem('tsar_views_count') || '1', 10);
-    viewsCount++;
-    localStorage.setItem('tsar_views_count', viewsCount);
-    document.getElementById('statViews').textContent = viewsCount;
-
     syncFromDatabase();
 })();
