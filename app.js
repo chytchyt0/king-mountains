@@ -189,6 +189,24 @@
                !confirmPublishModal.classList.contains('hidden') ||
                !viewArtModal.classList.contains('hidden') ||
                !chooseBaseModal.classList.contains('hidden');
+      const offerModal = document.getElementById('offerModal');
+    const openOfferBtn = document.getElementById('openOfferBtn');
+    const closeOfferModalBtn = document.getElementById('closeOfferModalBtn');
+    const confirmOfferBtn = document.getElementById('confirmOfferBtn');
+
+    const privacyModal = document.getElementById('privacyModal');
+    const openPrivacyBtn = document.getElementById('openPrivacyBtn');
+    const closePrivacyModalBtn = document.getElementById('closePrivacyModalBtn');
+    const confirmPrivacyBtn = document.getElementById('confirmPrivacyBtn');
+
+    openOfferBtn.addEventListener('click', () => offerModal.classList.remove('hidden'));
+    closeOfferModalBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
+    confirmOfferBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
+
+    openPrivacyBtn.addEventListener('click', () => privacyModal.classList.remove('hidden'));
+    closePrivacyModalBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
+    confirmPrivacyBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
+               
     }
 
     function updateBrushDot(e) {
@@ -574,7 +592,7 @@
     openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
     closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
     confirmRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
-
+!offerModal.classList.contains('hidden') || !privacyModal.classList.contains('hidden')
     function refreshBookingPriceInputs() {
         const prices = calculateAuctionPrices(state.currentPrice);
         state.autoNextPrice = prices.autoPrice;

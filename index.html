@@ -371,6 +371,9 @@
 
     <!-- МОДАЛЬНОЕ ОКНО ОПЛАТЫ И БРОНИРОВАНИЯ ХОЛСТА -->
     <div id="bookingModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="text-[11px] text-amber-800/80">
+                        Нажимая кнопку оплаты, вы принимаете условия <button type="button" onclick="document.getElementById('offerModal').classList.remove('hidden')" class="underline font-bold hover:text-amber-950">Публичной оферты</button> и правил площадки.
+                    </div>
         <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800 max-h-[92vh] overflow-y-auto">
             <button type="button" id="closeBookingModalBtn" class="absolute top-5 right-5 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
@@ -568,9 +571,95 @@
         </div>
     </div>
 
-    <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400 mt-8">
-        Царь Холста • Независимый арт-аукцион • Рисуй, владей троном, побеждай
+<footer class="border-t border-slate-200 bg-white py-6 text-xs text-slate-500 mt-8">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-left space-y-1">
+                <div class="font-bold text-slate-700">Царь Холста (king-canvas.online)</div>
+                <div>Самозанятый (плательщик НПД): <strong>Галкин Владислав Николаевич</strong> • ИНН: <strong>423601601044</strong></div>
+                <div>Связь и поддержка: <a href="https://t.me/chyt2_popozje" target="_blank" class="text-indigo-600 hover:underline">@chyt2_popozje</a> • <a href="mailto:vlads42prod@gmail.com" class="text-indigo-600 hover:underline">твой_email@yandex.ru</a></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-4 font-medium text-slate-600">
+                <button type="button" id="openOfferBtn" class="hover:text-indigo-600 underline underline-offset-2 transition">
+                    Публичная оферта
+                </button>
+                <button type="button" id="openPrivacyBtn" class="hover:text-indigo-600 underline underline-offset-2 transition">
+                    Политика конфиденциальности
+                </button>
+            </div>
+        </div>
     </footer>
+    <!-- МОДАЛЬНОЕ ОКНО ПУБЛИЧНОЙ ОФЕРТЫ -->
+    <div id="offerModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative text-slate-800 max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                <h3 class="font-display font-extrabold text-lg text-slate-900">Публичная оферта</h3>
+                <button type="button" id="closeOfferModalBtn" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto pr-2 py-4 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p><strong>1. Общие положения</strong><br>
+                Настоящий документ является официальным предложением (публичной офертой) физического лица, применяющего специальный налоговый режим «Налог на профессиональный доход» (Самозанятый): <strong>Иванов Владислав Сергеевич</strong> (ИНН: <strong>420000000000</strong>), именуемого в дальнейшем «Исполнитель», заключить договор на оказание цифровых интерактивных услуг на сайте <strong>king-canvas.online</strong> с любым дееспособным лицом («Заказчик»).</p>
+
+                <p><strong>2. Предмет договора и порядок оказания услуги</strong><br>
+                2.1. Исполнитель предоставляет Заказчику временный технический доступ к интерактивному графическому редактору на сайте king-canvas.online сроком на <strong>20 (двадцать) минут</strong> для создания изображения, а также осуществляет публикацию созданного изображения, указанного Заказчиком имени и ссылки в общем холсте и ленте истории сайта.<br>
+                2.2. Стоимость услуги формируется динамически по механике аукциона на сайте и отображается Заказчику до момента совершения оплаты.<br>
+                2.3. Услуга считается оказанной в полном объеме с момента предоставления Заказчику доступа к графическому редактору после подтверждения оплаты платежным шлюзом.</p>
+
+                <p><strong>3. Правила размещения контента и модерация</strong><br>
+                3.1. Заказчик обязуется не размещать на холсте, в имени или в прикрепляемых ссылках информацию, нарушающую законодательство РФ, включая: материалы 18+, экстремизм, пропаганду запрещенных веществ, азартных игр, оскорбления, спам, фишинговые и мошеннические ресурсы, а также контент, нарушающий авторские права третьих лиц.<br>
+                3.2. В случае выявления нарушений Исполнитель вправе в одностороннем порядке скрыть изображение и ссылку Заказчика с заменой на информационную заглушку без предварительного уведомления.</p>
+
+                <p><strong>4. Порядок оплаты и возврата средств</strong><br>
+                4.1. Оплата производится безналичным способом (через Систему быстрых платежей (СБП) или банковской картой) через подключенного платежного агрегатора. После оплаты Заказчику формируется электронный чек в соответствии с ФЗ № 422-ФЗ.<br>
+                4.2. Поскольку услуга носит цифровой характер и активируется мгновенно после оплаты, возврат денежных средств после открытия доступа к редактору не производится, в том числе если Заказчик закрыл страницу браузера до публикации рисунка, не успел завершить рисунок за отведенные 20 минут или его работа была скрыта модератором за нарушение п. 3.1 настоящей Оферты.</p>
+
+                <p><strong>5. Реквизиты Исполнителя</strong><br>
+                Плательщик НПД: Иванов Владислав Сергеевич<br>
+                ИНН: 420000000000<br>
+                Контактный email: твой_email@yandex.ru</p>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 shrink-0">
+                <button type="button" id="confirmOfferBtn" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПОЛИТИКИ КОНФИДЕНЦИАЛЬНОСТИ -->
+    <div id="privacyModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative text-slate-800 max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                <h3 class="font-display font-extrabold text-lg text-slate-900">Политика конфиденциальности</h3>
+                <button type="button" id="closePrivacyModalBtn" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto pr-2 py-4 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p><strong>1. Общие положения</strong><br>
+                Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации о пользователях сайта <strong>king-canvas.online</strong>, осуществляемой самозанятым <strong>Ивановым Владиславом Сергеевичем</strong> (ИНН: <strong>420000000000</strong>).</p>
+
+                <p><strong>2. Какие данные обрабатываются</strong><br>
+                2.1. Сайт не требует обязательной регистрации и сбора паспортных или платежных данных. Все платежные реквизиты вводятся пользователем исключительно на защищенной стороне платежного агрегатора.<br>
+                2.2. Пользователь добровольно указывает псевдоним (имя проекта), опциональную ссылку на социальную сеть и загружает изображение/аватарку для публичного отображения на холсте.<br>
+                2.3. В технических целях защиты от спама и накруток сервер автоматически обрабатывает обезличенные технические метаданные запроса (IP-адрес, временные метки).</p>
+
+                <p><strong>3. Цели обработки данных</strong><br>
+                Данные используются исключительно для идентификации автора рисунка в ленте истории, предотвращения злоупотреблений и исполнения условий Публичной оферты.</p>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 shrink-0">
+                <button type="button" id="confirmPrivacyBtn" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
