@@ -187,15 +187,16 @@
     myAnonBadge.textContent = state.anonName;
 
     // ================= ЗВУК И КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
-    let audioCtx = null;
+    const winSound = new Audio('zvuk1.mp3');
+    winSound.preload = 'auto';
+    winSound.volume = 0.8; // Громкость от 0.1 до 1.0
+
     function unlockAudio() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) audioCtx = new AudioContextClass();
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        // Разблокируем автовоспроизведение аудио в браузере при первом клике
+        winSound.play().then(() => {
+            winSound.pause();
+            winSound.currentTime = 0;
+        }).catch(() => {});
     }
     window.addEventListener('pointerdown', unlockAudio, { once: true });
 
@@ -215,37 +216,15 @@
         localStorage.setItem('tsar_sound_enabled', state.soundEnabled);
         updateSoundButtonUI();
         if (state.soundEnabled) {
-            unlockAudio();
             playFanfareSound();
         }
     });
 
-    // Торжественный 2-секундный аккорд победы (фанфары + звон)
     function playFanfareSound() {
         if (!state.soundEnabled) return;
         try {
-            unlockAudio();
-            if (!audioCtx) return;
-
-            const now = audioCtx.currentTime;
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-
-            notes.forEach((freq, idx) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = idx === 3 ? 'triangle' : 'sine';
-                osc.frequency.setValueAtTime(freq, now + idx * 0.11);
-
-                gain.gain.setValueAtTime(0.001, now + idx * 0.11);
-                gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.11 + 0.04);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.11 + 1.4);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start(now + idx * 0.11);
-                osc.stop(now + idx * 0.11 + 1.5);
-            });
+            winSound.currentTime = 0;
+            winSound.play().catch(err => console.warn('Автозапуск звука заблокирован браузером:', err));
         } catch (e) {
             console.warn('Audio error:', e);
         }
