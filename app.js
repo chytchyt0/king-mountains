@@ -89,11 +89,11 @@
     const lockedByNameEl = document.getElementById('lockedByName');
     const lockedTimerText = document.getElementById('lockedTimerText');
     const canvasShieldBadge = document.getElementById('canvasShieldBadge');
-    const editingModeNotice = document.getElementById('editingModeNotice');
-    const drawingTimerText = document.getElementById('drawingTimerText');
 
     const statOnlineEl = document.getElementById('statOnline');
     const headerCurrentPrice = document.getElementById('headerCurrentPrice');
+    const kingBanner = document.getElementById('kingBanner');
+    const kingRoleLabel = document.getElementById('kingRoleLabel');
     const kingName = document.getElementById('kingName');
     const kingPriceBadge = document.getElementById('kingPriceBadge');
     const kingSocialWrapper = document.getElementById('kingSocialWrapper');
@@ -103,7 +103,10 @@
     const kingAvatarImg = document.getElementById('kingAvatarImg');
 
     const immunityBox = document.getElementById('immunityBox');
+    const statusTimerIcon = document.getElementById('statusTimerIcon');
+    const statusTimerTitle = document.getElementById('statusTimerTitle');
     const immunityTimerText = document.getElementById('immunityTimerText');
+    const statusTimerSub = document.getElementById('statusTimerSub');
 
     const drawingToolbar = document.getElementById('drawingToolbar');
     const viewModeControls = document.getElementById('viewModeControls');
@@ -208,7 +211,6 @@
         unlockAudio();
     });
 
-    // Умный парсер ника Instagram (принимает "durov", "@durov", "https://instagram.com/durov")
     function formatInstagramData(rawInput) {
         if (!rawInput) return null;
         let clean = String(rawInput).trim();
@@ -343,7 +345,6 @@
         const activeKingName = state.currentKing ? state.currentKing.name : null;
 
         state.chatMessages.forEach(msg => {
-            // Подсвечиваем короной ТОЛЬКО того, кто является Царём прямо сейчас
             const isCurrentActiveKing = Boolean(activeKingName && msg.sender_name === activeKingName);
             const isMe = msg.sender_name === state.anonName || (state.isMyTurnDrawing && msg.sender_name === state.bookingData?.name);
 
@@ -932,9 +933,11 @@
 
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
 
-    // Лаконичная кнопка без дублирования таймера
     function updateMainButtonState() {
-        if (state.someoneElseDrawing) {
+        if (state.isMyTurnDrawing) {
+            startDrawBookingBtn.disabled = true;
+            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-palette"></i><span>Ты сейчас рисуешь!</span>';
+        } else if (state.someoneElseDrawing) {
             startDrawBookingBtn.disabled = true;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят художником</span>';
         } else if (state.immunitySecondsLeft > 0) {
@@ -990,10 +993,19 @@
         state.drawingSecondsLeft = Math.max(remainingSeconds, 60);
 
         bookingModal.classList.add('hidden');
-        viewModeControls.classList.add('hidden');
         lockedCanvasOverlay.classList.add('hidden');
         drawingToolbar.classList.remove('hidden');
-        editingModeNotice.classList.remove('hidden');
+        updateMainButtonState();
+
+        // Показываем таймер 20:00 прямо внутри верхней карточки Царя, чтобы холст не сдвигался ни на пиксель
+        clearInterval(state.immunityInterval);
+        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3 py-2';
+        statusTimerIcon.className = 'fa-regular fa-clock text-indigo-600 animate-pulse';
+        statusTimerTitle.textContent = 'Твоё время:';
+        statusTimerTitle.className = 'text-indigo-800';
+        immunityTimerText.className = 'font-mono font-bold text-indigo-700 text-sm sm:text-base';
+        statusTimerSub.textContent = 'Твори свой шедевр!';
+        statusTimerSub.className = 'text-[10px] text-indigo-600/90 mt-0.5';
 
         canvas.classList.remove('canvas-default', 'canvas-shielded');
         canvas.classList.add('canvas-editing');
@@ -1002,20 +1014,22 @@
         setActiveTool('brush');
         fillCanvasWhite();
         saveUndoState();
+        syncColumnsHeight();
 
         window.onbeforeunload = function() {
             return "Ты сейчас рисуешь на холсте! Если закроешь страницу, оплата сгорит.";
         };
 
         clearInterval(state.drawingInterval);
-        drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
+        immunityTimerText.textContent = formatTime(state.drawingSecondsLeft);
         state.drawingInterval = setInterval(() => {
             state.drawingSecondsLeft--;
-            drawingTimerText.textContent = formatTime(state.drawingSecondsLeft);
+            immunityTimerText.textContent = formatTime(state.drawingSecondsLeft);
             if (state.drawingSecondsLeft <= 0) {
                 clearInterval(state.drawingInterval);
                 alert("20 минут истекли! Время вышло.");
                 finishDrawingSession();
+                syncFromDatabase();
             }
         }, 1000);
     }
@@ -1142,10 +1156,9 @@
         clearInterval(state.drawingInterval);
 
         drawingToolbar.classList.add('hidden');
-        editingModeNotice.classList.add('hidden');
-        viewModeControls.classList.remove('hidden');
         canvas.classList.remove('canvas-editing');
         customBrushDot.style.display = 'none';
+        updateMainButtonState();
     }
 
     finalPublishBtn.addEventListener('click', async () => {
@@ -1212,17 +1225,30 @@
     function clearImmunityUI() {
         state.immunitySecondsLeft = 0;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
-        immunityBox.classList.add('hidden');
+        if (!state.isMyTurnDrawing) {
+            immunityBox.classList.add('hidden');
+            canvas.classList.remove('canvas-shielded');
+            canvas.classList.add('canvas-default');
+        }
         canvasShieldBadge.classList.add('hidden');
-        canvas.classList.remove('canvas-shielded');
-        if (!state.isMyTurnDrawing) canvas.classList.add('canvas-default');
         updateMainButtonState();
     }
 
     function startImmunityTimer(targetTimestamp) {
+        if (state.isMyTurnDrawing) return;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
+        // Возвращаем золотой стиль щита иммунитета
+        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2';
+        statusTimerIcon.className = 'fa-solid fa-shield-halved text-amber-600 animate-pulse';
+        statusTimerTitle.textContent = 'Иммунитет:';
+        statusTimerTitle.className = 'text-amber-800';
+        immunityTimerText.className = 'font-mono font-bold text-amber-700 text-sm sm:text-base';
+        statusTimerSub.textContent = 'Холст защищен от перебития';
+        statusTimerSub.className = 'text-[10px] text-amber-600/90 mt-0.5';
+
         function checkTime() {
+            if (state.isMyTurnDrawing) return;
             const now = Date.now();
             const diff = Math.floor((targetTimestamp - now) / 1000);
 
@@ -1232,6 +1258,7 @@
                 state.immunitySecondsLeft = diff;
                 immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
                 immunityBox.classList.remove('hidden');
+                immunityBox.classList.add('flex');
                 canvasShieldBadge.classList.remove('hidden');
                 canvas.classList.remove('canvas-default');
                 canvas.classList.add('canvas-shielded');
@@ -1422,7 +1449,7 @@
                 }
 
                 renderHistory();
-                renderChat(); // Перерисовываем чат, чтобы корона перешла к новому Царю
+                renderChat();
 
                 if (latestWasModerated) {
                     clearImmunityUI();
@@ -1458,6 +1485,7 @@
 
         state.initialSyncDone = true;
         await checkLockStatus();
+        syncColumnsHeight();
     }
 
     const sessionUserId = 'user_' + Math.random().toString(36).substring(2, 11);
@@ -1502,21 +1530,21 @@
         if (!state.isMyTurnDrawing) syncFromDatabase();
     }, 5000);
 
-    loadChatMessages();
-    syncFromDatabase().then(() => checkReturnedPaymentOrder());
-
-// ================= ВЫРАВНИВАНИЕ ВЫСОТЫ КОЛОНОК ПОД ХОЛСТ =================
+    // ================= ВЫРАВНИВАНИЕ ВЫСОТЫ КОЛОНОК СТРОГО ПО НИЗУ ХОЛСТА =================
     const leftChatCol = document.getElementById('leftChatCol');
     const centerCanvasCol = document.getElementById('centerCanvasCol');
     const rightHistoryCol = document.getElementById('rightHistoryCol');
 
     function syncColumnsHeight() {
-        if (!leftChatCol || !centerCanvasCol || !rightHistoryCol) return;
+        if (!leftChatCol || !centerCanvasCol || !rightHistoryCol || !canvasWrapper) return;
         if (window.innerWidth >= 1024) {
-            const centerHeight = centerCanvasCol.offsetHeight;
-            if (centerHeight > 200) {
-                leftChatCol.style.height = `${centerHeight}px`;
-                rightHistoryCol.style.height = `${centerHeight}px`;
+            const colTop = centerCanvasCol.getBoundingClientRect().top;
+            const canvasBottom = canvasWrapper.getBoundingClientRect().bottom;
+            const targetHeight = Math.round(canvasBottom - colTop);
+
+            if (targetHeight > 250) {
+                leftChatCol.style.height = `${targetHeight}px`;
+                rightHistoryCol.style.height = `${targetHeight}px`;
             }
         } else {
             leftChatCol.style.height = '';
@@ -1524,13 +1552,15 @@
         }
     }
 
-    if (typeof ResizeObserver !== 'undefined' && centerCanvasCol) {
+    if (typeof ResizeObserver !== 'undefined' && canvasWrapper) {
         const ro = new ResizeObserver(syncColumnsHeight);
-        ro.observe(centerCanvasCol);
+        ro.observe(canvasWrapper);
+        if (kingBanner) ro.observe(kingBanner);
     }
     window.addEventListener('resize', syncColumnsHeight);
     setTimeout(syncColumnsHeight, 100);
-    // =========================================================================
+    // ======================================================================================
 
-
+    loadChatMessages();
+    syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();

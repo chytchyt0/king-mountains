@@ -77,12 +77,12 @@
         </div>
     </header>
 
-    <!-- Основной контент: симметричная сетка, все колонки заканчиваются на одном нижнем уровне -->
-    <main class="flex-1 max-w-[1840px] w-full mx-auto px-3 sm:px-6 py-5 flex flex-col lg:flex-row gap-5 items-stretch justify-between">
+    <!-- Основной контент: монолитная 3-колоночная сетка -->
+    <main class="flex-1 max-w-[1840px] w-full mx-auto px-3 sm:px-6 py-5 flex flex-col lg:flex-row gap-5 items-start justify-between">
         
-        <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ЧАТ АНОНИМОВ (доходит ровно до нижнего края холста) -->
-<aside id="leftChatCol" class="order-2 lg:order-1 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col">
-    <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[420px] lg:h-full lg:overflow-hidden">
+        <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ЧАТ АНОНИМОВ -->
+        <aside id="leftChatCol" class="order-2 lg:order-1 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col">
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[420px] lg:h-full lg:overflow-hidden">
                 <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 shrink-0">
                     <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-comments text-indigo-500"></i> Чат зрителей
@@ -161,7 +161,7 @@
         <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА: БОЛЬШОЙ ХОЛСТ -->
         <section id="centerCanvasCol" class="order-1 lg:order-2 flex-1 min-w-0 flex flex-col items-center w-full max-w-[1120px] mx-auto">
             
-            <!-- Карточка Царя Горы -->
+            <!-- Карточка Царя Горы (фиксированная высота, не сдвигает холст) -->
             <div id="kingBanner" class="w-full mb-3.5 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3.5">
@@ -171,7 +171,7 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                                <span id="kingRoleLabel" class="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
                                     <i class="fa-solid fa-crown text-[10px]"></i> Текущий Царь Холста:
                                 </span>
                                 <span id="kingPriceBadge" class="hidden text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -190,30 +190,19 @@
                         </div>
                     </div>
 
+                    <!-- Блок таймера иммунитета ИЛИ времени на рисование (без сдвига макета) -->
                     <div id="immunityBox" class="hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">
                         <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs sm:text-sm">
-                            <i class="fa-solid fa-shield-halved text-amber-600 animate-pulse"></i>
-                            <span>Иммунитет:</span>
+                            <i id="statusTimerIcon" class="fa-solid fa-shield-halved text-amber-600 animate-pulse"></i>
+                            <span id="statusTimerTitle">Иммунитет:</span>
                             <span id="immunityTimerText" class="font-mono font-bold text-amber-700 text-sm sm:text-base">10:00</span>
                         </div>
-                        <span class="text-[10px] text-amber-600/90 mt-0.5">Холст защищен от перебития</span>
+                        <span id="statusTimerSub" class="text-[10px] text-amber-600/90 mt-0.5">Холст защищен от перебития</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Бейдж режима рисования -->
-            <div id="editingModeNotice" class="hidden w-full mb-3 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
-                    <span class="font-semibold">Ты захватил холст! Твори свой шедевр.</span>
-                </div>
-                <div class="flex items-center gap-1.5 font-mono text-xs font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md">
-                    <i class="fa-regular fa-clock"></i>
-                    <span id="drawingTimerText">20:00</span>
-                </div>
-            </div>
-
-            <!-- Обертка Холста -->
+            <!-- Обертка Холста (по её низу выравниваются чат и правая колонка) -->
             <div id="canvasWrapper" class="relative w-full aspect-[3/2] flex items-center justify-center rounded-2xl transition-all duration-500">
                 <canvas 
                     id="mainCanvas" 
@@ -305,7 +294,7 @@
                 </div>
             </div>
 
-            <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ -->
+            <!-- ПАНЕЛЬ ИНСТРУМЕНТОВ (появляется строго под холстом, не растягивая боковые колонки) -->
             <div id="drawingToolbar" class="hidden w-full mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-1.5 flex-wrap">
@@ -374,8 +363,8 @@
         </section>
 
         <!-- ПРАВАЯ КОЛОНКА: ИСТОРИЯ ЗАХВАТОВ + КНОПКА ЗАПУСКА РИСОВАНИЯ -->
-<aside id="rightHistoryCol" class="order-3 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-3.5">
-    <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[380px] lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+        <aside id="rightHistoryCol" class="order-3 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-3.5">
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[380px] lg:flex-1 lg:min-h-0 lg:overflow-hidden">
                 <div class="flex items-center justify-between mb-1.5 shrink-0">
                     <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> История захватов
@@ -391,7 +380,7 @@
                 </div>
             </div>
 
-            <!-- ГЛАВНАЯ КНОПКА В ПРАВОЙ КОЛОНКЕ (без таймера, выровнена по нижнему краю холста) -->
+            <!-- ГЛАВНАЯ КНОПКА В ПРАВОЙ КОЛОНКЕ -->
             <div id="viewModeControls" class="w-full shrink-0">
                 <button 
                     type="button" 
@@ -444,7 +433,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-indigo-500 font-bold">🛡️</span>
-                    <span><strong>10 минут</strong> полного иммунитета от перебития</span>
+                    <span><strong>10 минут</strong> иммунитета + дальше висит, пока не скинут</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-pink-500 font-bold">💬</span>
@@ -495,8 +484,8 @@
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
                     <span class="w-6 h-6 rounded-lg bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">3</span>
                     <div>
-                        <strong class="text-slate-800 block">Иммунитет на 10 минут:</strong>
-                        После публикации твой рисунок, имя, фото и ник в Instagram* гарантированно висят в топе минимум 10 минут без права перебития.
+                        <strong class="text-slate-800 block">Иммунитет 10 минут и удержание трона:</strong>
+                        После публикации твой рисунок, имя, фото и ник в Instagram* защищены 10 минут без права перебития, а затем остаются на главном экране до тех пор, пока тебя не скинет следующий участник.
                     </div>
                 </div>
 
@@ -662,7 +651,7 @@
             </div>
             <h3 class="font-display font-extrabold text-xl text-slate-900">Вы уверены в публикации?</h3>
             <p class="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
-                Рисунок закрепится на холсте под защитой на <strong>10 минут</strong>. Обратите внимание: опубликованный рисунок сохранится в истории и <strong>удалить его будет нельзя</strong>.
+                Рисунок закрепится на холсте под защитой на <strong>10 минут</strong>, а затем продолжит висеть, пока его не перебьют. Обратите внимание: опубликованный рисунок сохранится в истории и <strong>удалить его будет нельзя</strong>.
             </p>
 
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
@@ -806,7 +795,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПОЛИТИКИ КОНФИДЕНЦИАЛЬНОСТИ (БЕЗ РЕКВИЗИТОВ) -->
+    <!-- МОДАЛЬНОЕ ОКНО ПОЛИТИКИ КОНФИДЕНЦИАЛЬНОСТИ -->
     <div id="privacyModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative text-slate-800 max-h-[88vh] flex flex-col">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
