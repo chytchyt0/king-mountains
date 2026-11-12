@@ -78,7 +78,6 @@
             -webkit-user-select: none;
         }
 
-        /* ИСПРАВЛЕНО: position: fixed для точного совпадения с координатами clientX/clientY без смещения */
         #customBrushDot {
             pointer-events: none;
             position: fixed;
@@ -110,7 +109,6 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- Кастомная точка-кисть вынесена в корень body для идеального позиционирования -->
     <div id="customBrushDot"></div>
 
     <!-- Верхний бар -->
@@ -128,7 +126,6 @@
                 </div>
             </div>
 
-            <!-- Статистика и правила -->
             <div class="flex items-center gap-3 sm:gap-5">
                 <div class="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -158,7 +155,6 @@
     <!-- Основной контент -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <!-- Центр: Баннер царя + Холст + Управление -->
         <div class="lg:col-span-8 flex flex-col items-center w-full">
             
             <!-- Карточка Царя Горы -->
@@ -190,7 +186,6 @@
                         </div>
                     </div>
 
-                    <!-- Таймер иммунитета (10 минут после публикации) -->
                     <div id="immunityBox" class="hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">
                         <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs sm:text-sm">
                             <i class="fa-solid fa-shield-halved text-amber-600 animate-pulse"></i>
@@ -223,7 +218,6 @@
                     class="w-full h-full bg-white rounded-2xl transition-all duration-300 canvas-default"
                 ></canvas>
 
-                <!-- Оверлей пустого холста -->
                 <div id="emptyCanvasOverlay" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none">
                     <div class="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-inner">
                         <i class="fa-solid fa-paintbrush text-2xl"></i>
@@ -234,7 +228,6 @@
                     </p>
                 </div>
 
-                <!-- Оверлей блокировки: "Кто-то уже рисует.. ожидайте" -->
                 <div id="lockedCanvasOverlay" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center p-6 text-center text-white select-none z-20">
                     <div class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400 mb-3 animate-bounce">
                         <i class="fa-solid fa-paint-roller text-2xl"></i>
@@ -249,7 +242,6 @@
                     </div>
                 </div>
 
-                <!-- ИСПРАВЛЕНО: Только значок щита без текста -->
                 <div id="canvasShieldBadge" class="hidden pointer-events-none absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-amber-500 text-white shadow-lg flex items-center justify-center" title="Холст под защитой">
                     <i class="fa-solid fa-shield-halved text-sm"></i>
                 </div>
@@ -332,7 +324,7 @@
                     </h3>
                     <span id="historyCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono font-bold">0</span>
                 </div>
-                <p class="text-xs text-slate-400 mb-3">Кликни на карточку, чтобы посмотреть рисунок и поставить лайк</p>
+                <p class="text-xs text-slate-400 mb-3">Показываются последние 20 работ. Кликни для просмотра и лайка</p>
 
                 <div id="historyList" class="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                     <div id="emptyHistoryText" class="text-center py-10 text-slate-400 text-xs">
@@ -389,7 +381,7 @@
                     <strong class="block mb-1 flex items-center gap-1.5 text-rose-700">
                         <i class="fa-solid fa-triangle-exclamation"></i> Важное предупреждение:
                     </strong>
-                    Опубликованный рисунок навсегда остается в истории сайта и удалению не подлежит. В случае закрытия вкладки или истечения 20 минут средства не возвращаются.
+                    Опубликованный рисунок сохраняется в ленте последних 20 работ и удалению не подлежит. В случае закрытия вкладки или истечения 20 минут средства не возвращаются.
                 </div>
             </div>
 
@@ -449,7 +441,6 @@
                     </div>
                 </div>
 
-                <!-- Загрузка фото/аватарки -->
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
                         Твоя аватарка или логотип (по желанию)
@@ -466,7 +457,6 @@
                     </div>
                 </div>
 
-                <!-- Выбор ставки -->
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
                     <span class="text-xs font-bold text-slate-700 block">Выбор ставки аукциона:</span>
                     
@@ -506,7 +496,6 @@
                     </label>
                 </div>
 
-                <!-- Предупреждение -->
                 <div class="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-900 text-xs">
                     <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i>
                     После оплаты откроется редактор на <strong>20 минут</strong>. Если ты закроешь вкладку или выйдет время — деньги не возвращаются.
@@ -532,7 +521,7 @@
             </div>
             <h3 class="font-display font-extrabold text-xl text-slate-900">Вы уверены в публикации?</h3>
             <p class="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
-                Рисунок закрепится на холсте под защитой на <strong>10 минут</strong>. Обратите внимание: опубликованный рисунок навсегда сохранится на сайте и <strong>удалить его будет нельзя</strong>.
+                Рисунок закрепится на холсте под защитой на <strong>10 минут</strong>. Обратите внимание: опубликованный рисунок сохранится в истории и <strong>удалить его будет нельзя</strong>.
             </p>
 
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
@@ -608,7 +597,7 @@
         Царь Холста • Независимый арт-аукцион • Рисуй, владей троном, побеждай
     </footer>
 
-    <!-- JS ЛОГИКА -->
+    <!-- ЗАЩИЩЕННАЯ JS ЛОГИКА ЧЕРЕЗ RPC -->
     <script>
         (function() {
             const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
@@ -636,6 +625,7 @@
                 currentKing: null,
                 history: [],
                 currentlyViewedArt: null,
+                likedIds: JSON.parse(localStorage.getItem('tsar_liked_ids') || '[]'),
 
                 brushColor: '#0f172a',
                 brushSize: 8,
@@ -701,6 +691,7 @@
             const customPriceInput = document.getElementById('customPriceInput');
             const customPriceRangeHint = document.getElementById('customPriceRangeHint');
             const submitBookingBtnText = document.getElementById('submitBookingBtnText');
+            const submitBookingBtn = document.getElementById('submitBookingBtn');
 
             const confirmPublishModal = document.getElementById('confirmPublishModal');
             const cancelConfirmPublishBtn = document.getElementById('cancelConfirmPublishBtn');
@@ -776,7 +767,6 @@
                        !chooseBaseModal.classList.contains('hidden');
             }
 
-            // Точное позиционирование круглой точки-кисти поверх курсора
             function updateBrushDot(e) {
                 if (!state.isMyTurnDrawing || checkAnyModalOpen()) {
                     customBrushDot.style.display = 'none';
@@ -945,16 +935,31 @@
                 submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
             });
 
+            // Сжатие аватарки до 128x128 перед отправкой
             authorAvatarInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (evt) => {
-                        uploadedAvatarBase64 = evt.target.result;
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const tmpCanvas = document.createElement('canvas');
+                        tmpCanvas.width = 128;
+                        tmpCanvas.height = 128;
+                        const tCtx = tmpCanvas.getContext('2d');
+                        
+                        // Центрированная обрезка по квадрату
+                        const size = Math.min(img.width, img.height);
+                        const sx = (img.width - size) / 2;
+                        const sy = (img.height - size) / 2;
+                        tCtx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
+
+                        uploadedAvatarBase64 = tmpCanvas.toDataURL('image/jpeg', 0.8);
                         bookingAvatarPreview.innerHTML = `<img src="${uploadedAvatarBase64}" class="w-full h-full object-cover">`;
                     };
-                    reader.readAsDataURL(file);
-                }
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
             });
 
             startDrawBookingBtn.addEventListener('click', () => {
@@ -976,19 +981,6 @@
                     startDrawBookingBtn.disabled = false;
                     startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое</span>';
                 }
-            }
-
-            async function lockCanvasOnServer(name, minutes = 20) {
-                const lockUntil = new Date(Date.now() + minutes * 60 * 1000).toISOString();
-                await supabaseClient
-                    .from('canvas_lock')
-                    .upsert([{ id: 1, is_locked: true, locked_by: name, locked_until: lockUntil }]);
-            }
-
-            async function unlockCanvasOnServer() {
-                await supabaseClient
-                    .from('canvas_lock')
-                    .upsert([{ id: 1, is_locked: false, locked_by: null, locked_until: null }]);
             }
 
             async function checkLockStatus() {
@@ -1018,7 +1010,35 @@
                 updateMainButtonState();
             }
 
-            async function startDrawingSession() {
+            // Бронирование через защищенную RPC функцию book_canvas
+            bookingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                submitBookingBtn.disabled = true;
+                submitBookingBtnText.textContent = 'Проверяем и бронируем...';
+
+                const name = authorNameInput.value.trim() || 'Анонимный Художник';
+                const social = authorSocialInput.value.trim();
+
+                const { data, error } = await supabaseClient.rpc('book_canvas', {
+                    p_user_name: name
+                });
+
+                submitBookingBtn.disabled = false;
+
+                if (error || !data || !data.ok) {
+                    alert('Не удалось забронировать холст: ' + (data?.error || error?.message || 'Ошибка сервера'));
+                    refreshBookingPriceInputs();
+                    await checkLockStatus();
+                    return;
+                }
+
+                state.bookingData = {
+                    name,
+                    social,
+                    avatar: uploadedAvatarBase64,
+                    price: state.selectedPrice
+                };
+
                 state.isMyTurnDrawing = true;
                 state.drawingSecondsLeft = 1200;
 
@@ -1034,10 +1054,8 @@
                 fillCanvasWhite();
                 saveUndoState();
 
-                await lockCanvasOnServer(state.bookingData.name, 20);
-
                 window.onbeforeunload = function() {
-                    return "Ты сейчас рисуешь на холсте! Если закроешь страницу, холст освободится, а оплата сгорит.";
+                    return "Ты сейчас рисуешь на холсте! Если закроешь страницу, оплата сгорит.";
                 };
 
                 clearInterval(state.drawingInterval);
@@ -1050,21 +1068,6 @@
                         finishDrawingSession();
                     }
                 }, 1000);
-            }
-
-            bookingForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const name = authorNameInput.value.trim() || 'Анонимный Художник';
-                const social = authorSocialInput.value.trim();
-
-                state.bookingData = {
-                    name,
-                    social,
-                    avatar: uploadedAvatarBase64,
-                    price: state.selectedPrice
-                };
-
-                startDrawingSession();
             });
 
             openConfirmPublishModalBtn.addEventListener('click', () => {
@@ -1075,7 +1078,7 @@
                 confirmPublishModal.classList.add('hidden');
             });
 
-            async function finishDrawingSession() {
+            function finishDrawingSession() {
                 state.isMyTurnDrawing = false;
                 window.onbeforeunload = null;
                 clearInterval(state.drawingInterval);
@@ -1085,10 +1088,9 @@
                 viewModeControls.classList.remove('hidden');
                 canvas.classList.remove('canvas-editing');
                 customBrushDot.style.display = 'none';
-
-                await unlockCanvasOnServer();
             }
 
+            // Публикация через защищенную RPC функцию publish_canvas (оставляет 20 записей)
             finalPublishBtn.addEventListener('click', async () => {
                 confirmPublishModal.classList.add('hidden');
                 finalPublishBtn.disabled = true;
@@ -1096,32 +1098,24 @@
 
                 const imageDataUrl = canvas.toDataURL('image/png');
                 const b = state.bookingData;
-                const nextPrices = calculateAuctionPrices(b.price);
-                const shieldUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-                const { error } = await supabaseClient
-                    .from('canvas_history')
-                    .insert([{
-                        author_name: b.name,
-                        author_link: b.social,
-                        author_avatar: b.avatar,
-                        image_data: imageDataUrl,
-                        price: b.price,
-                        next_price: nextPrices.autoPrice,
-                        shield_until: shieldUntil,
-                        likes: 0,
-                        views: 1
-                    }]);
+                const { data, error } = await supabaseClient.rpc('publish_canvas', {
+                    p_name: b.name,
+                    p_link: b.social,
+                    p_avatar: b.avatar,
+                    p_image: imageDataUrl,
+                    p_price: b.price
+                });
 
                 finalPublishBtn.disabled = false;
                 finalPublishBtn.textContent = 'Да, опубликовать!';
 
-                if (error) {
-                    alert('Ошибка записи в базу: ' + error.message);
+                if (error || !data || !data.ok) {
+                    alert('Ошибка публикации: ' + (data?.error || error?.message || 'Ошибка сервера'));
                     return;
                 }
 
-                await finishDrawingSession();
+                finishDrawingSession();
                 await syncFromDatabase();
             });
 
@@ -1190,6 +1184,11 @@
                 viewArtViewsCount.textContent = (art.views || 1) + 1;
                 likeArtCount.textContent = art.likes || 0;
 
+                const alreadyLiked = state.likedIds.includes(art.id);
+                likeArtIcon.className = alreadyLiked 
+                    ? 'fa-solid fa-heart text-sm text-rose-600' 
+                    : 'fa-regular fa-heart text-sm';
+
                 if (art.avatar) {
                     viewArtAvatar.innerHTML = `<img src="${art.avatar}" class="w-full h-full object-cover">`;
                 } else {
@@ -1209,19 +1208,23 @@
 
             closeViewArtModalBtn.addEventListener('click', () => viewArtModal.classList.add('hidden'));
 
+            // Лайк через защищенную RPC функцию increment_like
             likeArtBtn.addEventListener('click', async () => {
                 if (!state.currentlyViewedArt) return;
                 const art = state.currentlyViewedArt;
+
+                if (state.likedIds.includes(art.id)) return;
+
+                state.likedIds.push(art.id);
+                localStorage.setItem('tsar_liked_ids', JSON.stringify(state.likedIds));
+
                 art.likes = (art.likes || 0) + 1;
                 likeArtCount.textContent = art.likes;
                 likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600 animate-ping';
                 setTimeout(() => { likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600'; }, 300);
 
                 if (art.id) {
-                    await supabaseClient
-                        .from('canvas_history')
-                        .update({ likes: art.likes })
-                        .eq('id', art.id);
+                    await supabaseClient.rpc('increment_like', { p_art_id: art.id });
                 }
             });
 
@@ -1360,7 +1363,7 @@
             }
 
             supabaseClient
-                .channel('realtime:tsar_channel')
+                .channel('realtime:tsar_channel_secure')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_history' }, () => {
                     syncFromDatabase();
                 })
