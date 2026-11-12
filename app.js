@@ -896,7 +896,7 @@
         }
     }
 
-    async function checkLockStatus() {
+  async function checkLockStatus() {
         const { data } = await supabaseClient
             .from('canvas_lock')
             .select('*')
@@ -918,9 +918,15 @@
             }
         }
 
+        // Если до этого кто-то рисовал, а теперь замок снят — сразу подтягиваем новый рисунок и запускаем салют!
+        const wasDrawingBefore = state.someoneElseDrawing;
         state.someoneElseDrawing = false;
         lockedCanvasOverlay.classList.add('hidden');
         updateMainButtonState();
+
+        if (wasDrawingBefore && !state.isMyTurnDrawing) {
+            await syncFromDatabase();
+        }
     }
 
     function activatePaidDrawingSession(order, remainingSeconds = 1200) {
@@ -1436,6 +1442,10 @@
 
     setInterval(checkLockStatus, 2000);
     setInterval(loadChatMessages, 4000);
+    setInterval(() => {
+        if (!state.isMyTurnDrawing) syncFromDatabase();
+    }, 5000);
+    
     loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();
