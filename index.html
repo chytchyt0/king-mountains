@@ -98,25 +98,63 @@
                     </div>
                 </div>
 
-                <form id="chatForm" autocomplete="off" class="pt-2.5 border-t border-slate-100 shrink-0 flex items-center gap-1.5">
-                    <input 
-                        type="text" 
-                        id="chatMessageInput" 
-                        name="canvas_live_chat_msg"
-                        autocomplete="one-time-code"
-                        maxlength="160" 
-                        placeholder="Написать в чат..." 
-                        class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white"
-                    >
-                    <button 
-                        type="submit" 
-                        id="sendChatBtn" 
-                        class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0 transition active:scale-95 disabled:opacity-50"
-                        title="Отправить"
-                    >
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                </form>
+               <div class="relative pt-2.5 border-t border-slate-100 shrink-0">
+                    <!-- Всплывающая панель смайлов -->
+                    <div id="emojiPickerPopup" class="hidden absolute bottom-full left-0 right-0 mb-2 p-2.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-20 grid grid-cols-6 gap-1.5 text-center select-none">
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">👑</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🔥</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">😂</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">💀</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🎨</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">👀</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">❤️</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🤡</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">💩</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🚀</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">💸</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">😱</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">😎</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🤝</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">👏</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🗿</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">😭</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">😡</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🤯</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">🥳</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">👀</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">💯</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">⚡</button>
+                        <button type="button" class="emoji-btn text-lg hover:bg-slate-100 rounded-lg py-1 transition">💎</button>
+                    </div>
+
+                    <form id="chatForm" autocomplete="off" class="flex items-center gap-1.5">
+                        <button 
+                            type="button" 
+                            id="toggleEmojiBtn" 
+                            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center shrink-0 transition text-base"
+                            title="Смайлы"
+                        >
+                            😀
+                        </button>
+                        <input 
+                            type="text" 
+                            id="chatMessageInput" 
+                            name="canvas_live_chat_msg"
+                            autocomplete="one-time-code"
+                            maxlength="160" 
+                            placeholder="Написать в чат..." 
+                            class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-indigo-500 focus:bg-white"
+                        >
+                        <button 
+                            type="submit" 
+                            id="sendChatBtn" 
+                            class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shrink-0 transition active:scale-95 disabled:opacity-50"
+                            title="Отправить"
+                        >
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 

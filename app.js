@@ -328,6 +328,7 @@
         e.preventDefault();
         const text = chatMessageInput.value.trim();
         if (!text) return;
+emojiPickerPopup.classList.add('hidden'); 
 
         sendChatBtn.disabled = true;
         const senderDisplay = state.isMyTurnDrawing && state.bookingData?.name
@@ -348,6 +349,35 @@
         }
 
         chatMessageInput.value = '';
+
+// ================= ПАНЕЛЬ СМАЙЛОВ В ЧАТЕ =================
+    const toggleEmojiBtn = document.getElementById('toggleEmojiBtn');
+    const emojiPickerPopup = document.getElementById('emojiPickerPopup');
+    const emojiBtns = document.querySelectorAll('.emoji-btn');
+
+    toggleEmojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        emojiPickerPopup.classList.toggle('hidden');
+    });
+
+    emojiBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const emoji = btn.textContent;
+            if (chatMessageInput.value.length + emoji.length <= 160) {
+                chatMessageInput.value += emoji;
+            }
+            chatMessageInput.focus();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!emojiPickerPopup.contains(e.target) && e.target !== toggleEmojiBtn) {
+            emojiPickerPopup.classList.add('hidden');
+        }
+    });
+
+
         await loadChatMessages();
     });
     // ========================================================
