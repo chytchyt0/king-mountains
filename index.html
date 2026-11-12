@@ -371,9 +371,6 @@
 
     <!-- МОДАЛЬНОЕ ОКНО ОПЛАТЫ И БРОНИРОВАНИЯ ХОЛСТА -->
     <div id="bookingModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="text-[11px] text-amber-800/80">
-                        Нажимая кнопку оплаты, вы принимаете условия <button type="button" onclick="document.getElementById('offerModal').classList.remove('hidden')" class="underline font-bold hover:text-amber-950">Публичной оферты</button> и правил площадки.
-                    </div>
         <div class="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative animate-fade-in text-slate-800 max-h-[92vh] overflow-y-auto">
             <button type="button" id="closeBookingModalBtn" class="absolute top-5 right-5 w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                 <i class="fa-solid fa-xmark"></i>
@@ -396,12 +393,13 @@
                     </label>
                     <input 
                         type="text" 
-    id="authorSocialInput" 
-    name="canvas_social_url_random"
-    autocomplete="one-time-code"
-    maxlength="60"
-    placeholder="username или t.me/my_channel"
-    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+                        id="authorNameInput" 
+                        name="canvas_author_title_random"
+                        autocomplete="one-time-code"
+                        required 
+                        maxlength="32"
+                        placeholder="Например: Влад | Автор канала"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
                     >
                 </div>
 
@@ -416,6 +414,8 @@
                         <input 
                             type="text" 
                             id="authorSocialInput" 
+                            name="canvas_social_url_random"
+                            autocomplete="one-time-code"
                             maxlength="60"
                             placeholder="username или t.me/my_channel"
                             class="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
@@ -466,12 +466,12 @@
                         <div id="customPriceInputBox" class="hidden mt-2.5 pt-2 border-t border-slate-100">
                             <div class="flex items-center gap-2">
                                 <input 
-    type="number" 
-    id="customPriceInput" 
-    autocomplete="off"
-    placeholder="Сумма в рублях" 
-    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold"
->
+                                    type="number" 
+                                    id="customPriceInput" 
+                                    autocomplete="off"
+                                    placeholder="Сумма в рублях" 
+                                    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold"
+                                >
                                 <span class="text-sm font-bold text-slate-600">₽</span>
                             </div>
                             <span id="customPriceRangeHint" class="text-[10px] text-slate-400 mt-1 block"></span>
@@ -485,7 +485,7 @@
                         После оплаты откроется редактор на <strong>20 минут</strong>. При закрытии вкладки или нарушении правил площадки работа удаляется <strong>без возврата средств</strong>.
                     </div>
                     <div class="text-[11px] text-amber-800/80">
-                        Нажимая кнопку оплаты, вы подтверждаете согласие с правилами площадки.
+                        Нажимая кнопку оплаты, вы принимаете условия <button type="button" onclick="document.getElementById('offerModal').classList.remove('hidden')" class="underline font-bold hover:text-amber-950">Публичной оферты</button> и правил площадки.
                     </div>
                 </div>
 
@@ -571,12 +571,13 @@
         </div>
     </div>
 
-<footer class="border-t border-slate-200 bg-white py-6 text-xs text-slate-500 mt-8">
+    <!-- ПОДВАЛ С РЕКВИЗИТАМИ И ОФЕРТОЙ -->
+    <footer class="border-t border-slate-200 bg-white py-6 text-xs text-slate-500 mt-8">
         <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-center sm:text-left space-y-1">
                 <div class="font-bold text-slate-700">Царь Холста (king-canvas.online)</div>
-                <div>Самозанятый (плательщик НПД): <strong>Галкин Владислав Николаевич</strong> • ИНН: <strong>423601601044</strong></div>
-                <div>Связь и поддержка: <a href="https://t.me/chyt2_popozje" target="_blank" class="text-indigo-600 hover:underline">@chyt2_popozje</a> • <a href="mailto:vlads42prod@gmail.com" class="text-indigo-600 hover:underline">твой_email@yandex.ru</a></div>
+                <div>Самозанятый: <strong>Галкин Владислав Николаевич</strong> • ИНН: <strong>423601601044</strong></div>
+                <div>Связь и поддержка: <a href="https://t.me/твой_ник" target="_blank" class="text-indigo-600 hover:underline">@твой_ник</a> • <a href="mailto:твой_email@yandex.ru" class="text-indigo-600 hover:underline">твой_email@yandex.ru</a></div>
             </div>
 
             <div class="flex flex-wrap items-center justify-center gap-4 font-medium text-slate-600">
@@ -589,6 +590,7 @@
             </div>
         </div>
     </footer>
+
     <!-- МОДАЛЬНОЕ ОКНО ПУБЛИЧНОЙ ОФЕРТЫ -->
     <div id="offerModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl relative text-slate-800 max-h-[88vh] flex flex-col">
@@ -601,7 +603,7 @@
 
             <div class="overflow-y-auto pr-2 py-4 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
                 <p><strong>1. Общие положения</strong><br>
-                Настоящий документ является официальным предложением (публичной офертой) физического лица, применяющего специальный налоговый режим «Налог на профессиональный доход» (Самозанятый): <strong>Иванов Владислав Сергеевич</strong> (ИНН: <strong>420000000000</strong>), именуемого в дальнейшем «Исполнитель», заключить договор на оказание цифровых интерактивных услуг на сайте <strong>king-canvas.online</strong> с любым дееспособным лицом («Заказчик»).</p>
+                Настоящий документ является официальным предложением (публичной офертой) физического лица, применяющего специальный налоговый режим «Налог на профессиональный доход» (Самозанятый): <strong>Галкин Владислав Николаевич</strong> (ИНН: <strong>423601601044</strong>), именуемого в дальнейшем «Исполнитель», заключить договор на оказание цифровых интерактивных услуг на сайте <strong>king-canvas.online</strong> с любым дееспособным лицом («Заказчик»).</p>
 
                 <p><strong>2. Предмет договора и порядок оказания услуги</strong><br>
                 2.1. Исполнитель предоставляет Заказчику временный технический доступ к интерактивному графическому редактору на сайте king-canvas.online сроком на <strong>20 (двадцать) минут</strong> для создания изображения, а также осуществляет публикацию созданного изображения, указанного Заказчиком имени и ссылки в общем холсте и ленте истории сайта.<br>
@@ -617,9 +619,9 @@
                 4.2. Поскольку услуга носит цифровой характер и активируется мгновенно после оплаты, возврат денежных средств после открытия доступа к редактору не производится, в том числе если Заказчик закрыл страницу браузера до публикации рисунка, не успел завершить рисунок за отведенные 20 минут или его работа была скрыта модератором за нарушение п. 3.1 настоящей Оферты.</p>
 
                 <p><strong>5. Реквизиты Исполнителя</strong><br>
-                Плательщик НПД: Иванов Владислав Сергеевич<br>
-                ИНН: 420000000000<br>
-                Контактный email: твой_email@yandex.ru</p>
+                Плательщик НПД: Галкин Владислав Николаевич<br>
+                ИНН: 423601601044<br>
+                Контактный email: vlads42prod@gmail.com</p>
             </div>
 
             <div class="pt-3 border-t border-slate-100 shrink-0">
@@ -642,7 +644,7 @@
 
             <div class="overflow-y-auto pr-2 py-4 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
                 <p><strong>1. Общие положения</strong><br>
-                Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации о пользователях сайта <strong>king-canvas.online</strong>, осуществляемой самозанятым <strong>Ивановым Владиславом Сергеевичем</strong> (ИНН: <strong>420000000000</strong>).</p>
+                Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации о пользователях сайта <strong>king-canvas.online</strong>, осуществляемой самозанятым <strong>Галкиным Владиславом Николаевичем</strong> (ИНН: <strong>423601601044</strong>).</p>
 
                 <p><strong>2. Какие данные обрабатываются</strong><br>
                 2.1. Сайт не требует обязательной регистрации и сбора паспортных или платежных данных. Все платежные реквизиты вводятся пользователем исключительно на защищенной стороне платежного агрегатора.<br>

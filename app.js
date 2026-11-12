@@ -103,6 +103,16 @@
     const closeRulesModalBtn = document.getElementById('closeRulesModalBtn');
     const confirmRulesBtn = document.getElementById('confirmRulesBtn');
 
+    const offerModal = document.getElementById('offerModal');
+    const openOfferBtn = document.getElementById('openOfferBtn');
+    const closeOfferModalBtn = document.getElementById('closeOfferModalBtn');
+    const confirmOfferBtn = document.getElementById('confirmOfferBtn');
+
+    const privacyModal = document.getElementById('privacyModal');
+    const openPrivacyBtn = document.getElementById('openPrivacyBtn');
+    const closePrivacyModalBtn = document.getElementById('closePrivacyModalBtn');
+    const confirmPrivacyBtn = document.getElementById('confirmPrivacyBtn');
+
     const bookingModal = document.getElementById('bookingModal');
     const closeBookingModalBtn = document.getElementById('closeBookingModalBtn');
     const bookingForm = document.getElementById('bookingForm');
@@ -145,6 +155,16 @@
 
     let uploadedAvatarBase64 = null;
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     function calculateAuctionPrices(basePrice) {
         const autoPrice = Math.max(Math.ceil(basePrice * 1.05), basePrice + 1);
         const maxPrice = Math.max(Math.ceil(basePrice * 1.25), autoPrice);
@@ -185,28 +205,12 @@
 
     function checkAnyModalOpen() {
         return !rulesModal.classList.contains('hidden') ||
+               !offerModal.classList.contains('hidden') ||
+               !privacyModal.classList.contains('hidden') ||
                !bookingModal.classList.contains('hidden') ||
                !confirmPublishModal.classList.contains('hidden') ||
                !viewArtModal.classList.contains('hidden') ||
                !chooseBaseModal.classList.contains('hidden');
-      const offerModal = document.getElementById('offerModal');
-    const openOfferBtn = document.getElementById('openOfferBtn');
-    const closeOfferModalBtn = document.getElementById('closeOfferModalBtn');
-    const confirmOfferBtn = document.getElementById('confirmOfferBtn');
-
-    const privacyModal = document.getElementById('privacyModal');
-    const openPrivacyBtn = document.getElementById('openPrivacyBtn');
-    const closePrivacyModalBtn = document.getElementById('closePrivacyModalBtn');
-    const confirmPrivacyBtn = document.getElementById('confirmPrivacyBtn');
-
-    openOfferBtn.addEventListener('click', () => offerModal.classList.remove('hidden'));
-    closeOfferModalBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
-    confirmOfferBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
-
-    openPrivacyBtn.addEventListener('click', () => privacyModal.classList.remove('hidden'));
-    closePrivacyModalBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
-    confirmPrivacyBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
-               
     }
 
     function updateBrushDot(e) {
@@ -592,7 +596,15 @@
     openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
     closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
     confirmRulesBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
-!offerModal.classList.contains('hidden') || !privacyModal.classList.contains('hidden')
+
+    openOfferBtn.addEventListener('click', () => offerModal.classList.remove('hidden'));
+    closeOfferModalBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
+    confirmOfferBtn.addEventListener('click', () => offerModal.classList.add('hidden'));
+
+    openPrivacyBtn.addEventListener('click', () => privacyModal.classList.remove('hidden'));
+    closePrivacyModalBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
+    confirmPrivacyBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
+
     function refreshBookingPriceInputs() {
         const prices = calculateAuctionPrices(state.currentPrice);
         state.autoNextPrice = prices.autoPrice;
@@ -825,7 +837,7 @@
             card.className = 'cursor-pointer group relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 hover:border-indigo-500 transition';
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-full aspect-[3/2] object-cover">
-                <div class="p-1.5 text-[11px] font-bold text-slate-700 truncate">${item.name}</div>
+                <div class="p-1.5 text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.name)}</div>
             `;
             card.addEventListener('click', () => {
                 drawImageFromDataUrl(item.imageDataUrl, () => {
@@ -950,14 +962,14 @@
 
             const subText = item.isBanned 
                 ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
-                : (item.social || 'без ссылки');
+                : escapeHtml(item.social || 'без ссылки');
 
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-14 h-10 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5">
                         ${avatarHtml}
-                        <span class="text-xs font-bold text-slate-800 truncate">${item.name}</span>
+                        <span class="text-xs font-bold text-slate-800 truncate">${escapeHtml(item.name)}</span>
                         ${isTop ? '<span class="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">Царь</span>' : ''}
                     </div>
                     <span class="text-[11px] text-slate-400 truncate block mt-0.5">${subText}</span>
@@ -987,13 +999,11 @@
         }
 
         if (data && data.length > 0) {
-            // Цена аукциона всегда берется от самой свежей записи в базе
             state.currentPrice = data[0].next_price;
             headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
 
             const latestWasModerated = Boolean(data[0].is_banned) || Boolean(data[0].is_hidden) || (data[0].image_data && data[0].image_data.startsWith('data:image/svg+xml'));
 
-            // В правую табличку берем только НЕ скрытые записи (максимум 20 штук)
             state.history = data
                 .filter(row => !row.is_hidden)
                 .slice(0, 20)
@@ -1016,7 +1026,6 @@
                     };
                 });
 
-            // На главный холст ставим последнюю НЕ забаненную работу
             const king = state.history.find(item => !item.isBanned);
             state.currentKing = king || null;
 
@@ -1050,7 +1059,6 @@
 
                 renderHistory();
 
-                // Если последнюю работу снесли модерацией — сразу снимаем щит и разблокируем холст
                 if (latestWasModerated) {
                     clearImmunityUI();
                 } else {
