@@ -81,8 +81,8 @@
     <main class="flex-1 max-w-[1840px] w-full mx-auto px-3 sm:px-6 py-5 flex flex-col lg:flex-row gap-5 items-stretch justify-between">
         
         <!-- ЛЕВАЯ КОЛОНКА: ЖИВОЙ ЧАТ АНОНИМОВ (доходит ровно до нижнего края холста) -->
-        <aside id="leftChatCol" class="order-2 lg:order-1 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col">
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[420px] lg:h-full">
+<aside id="leftChatCol" class="order-2 lg:order-1 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col lg:h-0 lg:min-h-full">
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[420px] lg:h-full lg:overflow-hidden">
                 <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 shrink-0">
                     <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-comments text-indigo-500"></i> Чат зрителей
@@ -374,8 +374,8 @@
         </section>
 
         <!-- ПРАВАЯ КОЛОНКА: ИСТОРИЯ ЗАХВАТОВ + КНОПКА ЗАПУСКА РИСОВАНИЯ -->
-        <aside id="rightHistoryCol" class="order-3 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-3.5">
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[380px] lg:flex-1 lg:min-h-0">
+<aside id="rightHistoryCol" class="order-3 w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-3.5 lg:h-0 lg:min-h-full">
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-3.5 flex flex-col shadow-sm h-[380px] lg:flex-1 lg:min-h-0 lg:overflow-hidden">
                 <div class="flex items-center justify-between mb-1.5 shrink-0">
                     <h3 class="font-display font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> История захватов
@@ -434,7 +434,7 @@
                 Добро пожаловать в «Царь Холста»!
             </h2>
             <p class="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed">
-                Это живой онлайн-аукцион за главный экран. Захвати холст, нарисуй свой арт или мем, оставь ник в Instagram* — и <strong>целых 10 минут</strong> твоя работа будет висеть на троне у всех на виду.
+                Это живой онлайн-аукцион за главный экран. Захвати холст, нарисуй свой арт или мем, оставь ник в Instagram* — первые <strong>10 минут</strong> у твоей работы действует иммунитет, а дальше она висит на троне у всех на виду, <strong>пока её не перебьёт следующий Царь</strong>!
             </p>
 
             <div class="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs text-slate-600 space-y-1.5">
