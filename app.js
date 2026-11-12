@@ -1504,4 +1504,33 @@
 
     loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
+
+// ================= ВЫРАВНИВАНИЕ ВЫСОТЫ КОЛОНОК ПОД ХОЛСТ =================
+    const leftChatCol = document.getElementById('leftChatCol');
+    const centerCanvasCol = document.getElementById('centerCanvasCol');
+    const rightHistoryCol = document.getElementById('rightHistoryCol');
+
+    function syncColumnsHeight() {
+        if (!leftChatCol || !centerCanvasCol || !rightHistoryCol) return;
+        if (window.innerWidth >= 1024) {
+            const centerHeight = centerCanvasCol.offsetHeight;
+            if (centerHeight > 200) {
+                leftChatCol.style.height = `${centerHeight}px`;
+                rightHistoryCol.style.height = `${centerHeight}px`;
+            }
+        } else {
+            leftChatCol.style.height = '';
+            rightHistoryCol.style.height = '';
+        }
+    }
+
+    if (typeof ResizeObserver !== 'undefined' && centerCanvasCol) {
+        const ro = new ResizeObserver(syncColumnsHeight);
+        ro.observe(centerCanvasCol);
+    }
+    window.addEventListener('resize', syncColumnsHeight);
+    setTimeout(syncColumnsHeight, 100);
+    // =========================================================================
+
+
 })();
