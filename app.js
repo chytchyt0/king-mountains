@@ -131,6 +131,9 @@
     const cancelStampBtn = document.getElementById('cancelStampBtn');
     const applyStampBtn = document.getElementById('applyStampBtn');
 
+    const welcomeModal = document.getElementById('welcomeModal');
+    const closeWelcomeModalBtn = document.getElementById('closeWelcomeModalBtn');
+
     const rulesModal = document.getElementById('rulesModal');
     const openRulesBtn = document.getElementById('openRulesBtn');
     const closeRulesModalBtn = document.getElementById('closeRulesModalBtn');
@@ -194,6 +197,16 @@
 
     let uploadedAvatarBase64 = null;
     myAnonBadge.textContent = state.anonName;
+
+    // Показываем приветственное окно один раз при первом визите
+    if (!localStorage.getItem('tsar_welcome_seen')) {
+        welcomeModal.classList.remove('hidden');
+    }
+    closeWelcomeModalBtn.addEventListener('click', () => {
+        localStorage.setItem('tsar_welcome_seen', '1');
+        welcomeModal.classList.add('hidden');
+        unlockAudio();
+    });
 
     // Умный парсер ника Instagram (принимает "durov", "@durov", "https://instagram.com/durov")
     function formatInstagramData(rawInput) {
@@ -327,12 +340,17 @@
         }
         emptyChatText.classList.add('hidden');
 
+        const activeKingName = state.currentKing ? state.currentKing.name : null;
+
         state.chatMessages.forEach(msg => {
-            const isMe = msg.sender_name === state.anonName || (state.isMyTurnDrawing && msg.is_king);
+            // Подсвечиваем короной ТОЛЬКО того, кто является Царём прямо сейчас
+            const isCurrentActiveKing = Boolean(activeKingName && msg.sender_name === activeKingName);
+            const isMe = msg.sender_name === state.anonName || (state.isMyTurnDrawing && msg.sender_name === state.bookingData?.name);
+
             const row = document.createElement('div');
             row.className = `p-2 rounded-xl border ${
-                msg.is_king 
-                    ? 'bg-amber-50/70 border-amber-200' 
+                isCurrentActiveKing 
+                    ? 'bg-amber-50/80 border-amber-300' 
                     : isMe 
                         ? 'bg-indigo-50/60 border-indigo-100' 
                         : 'bg-slate-50 border-slate-100'
@@ -340,8 +358,8 @@
 
             const date = new Date(msg.created_at);
             const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const crownHtml = msg.is_king ? '<span title="Царь Холста">👑 </span>' : '';
-            const nameColor = msg.is_king ? 'text-amber-700' : isMe ? 'text-indigo-700' : 'text-slate-700';
+            const crownHtml = isCurrentActiveKing ? '<span title="Текущий Царь Холста">👑 </span>' : '';
+            const nameColor = isCurrentActiveKing ? 'text-amber-700' : isMe ? 'text-indigo-700' : 'text-slate-700';
 
             row.innerHTML = `
                 <div class="flex items-center justify-between gap-1 mb-0.5">
@@ -384,7 +402,7 @@
         const { data, error } = await supabaseClient.rpc('send_chat_message', {
             p_sender_name: senderDisplay,
             p_message: text,
-            p_is_king: state.isMyTurnDrawing
+            p_is_king: false
         });
 
         sendChatBtn.disabled = false;
@@ -438,7 +456,8 @@
     fillCanvasWhite();
 
     function checkAnyModalOpen() {
-        return !rulesModal.classList.contains('hidden') ||
+        return !welcomeModal.classList.contains('hidden') ||
+               !rulesModal.classList.contains('hidden') ||
                !infoModal.classList.contains('hidden') ||
                !offerModal.classList.contains('hidden') ||
                !privacyModal.classList.contains('hidden') ||
@@ -905,7 +924,6 @@
 
     startDrawBookingBtn.addEventListener('click', () => {
         refreshBookingPriceInputs();
-        // Подставляем текущего Анонима из чата, если поле ещё пустое
         if (!authorNameInput.value.trim()) {
             authorNameInput.value = state.anonName;
         }
@@ -914,13 +932,14 @@
 
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
 
+    // Лаконичная кнопка без дублирования таймера
     function updateMainButtonState() {
         if (state.someoneElseDrawing) {
             startDrawBookingBtn.disabled = true;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят художником</span>';
         } else if (state.immunitySecondsLeft > 0) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Щит активен (${formatTime(state.immunitySecondsLeft)})</span>`;
+            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-shield-halved"></i><span>Холст под защитой</span>';
         } else {
             startDrawBookingBtn.disabled = false;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое</span>';
@@ -1403,6 +1422,7 @@
                 }
 
                 renderHistory();
+                renderChat(); // Перерисовываем чат, чтобы корона перешла к новому Царю
 
                 if (latestWasModerated) {
                     clearImmunityUI();
@@ -1420,6 +1440,7 @@
                     emptyCanvasOverlay.classList.remove('hidden');
                 }
                 renderHistory();
+                renderChat();
             }
         } else {
             state.lastKnownKingId = null;
@@ -1432,6 +1453,7 @@
             fillCanvasWhite();
             emptyCanvasOverlay.classList.remove('hidden');
             renderHistory();
+            renderChat();
         }
 
         state.initialSyncDone = true;
