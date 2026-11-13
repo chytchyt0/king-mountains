@@ -21,6 +21,7 @@
 
         paymentsEnabled: true,
         maintenanceMode: false,
+        chatEnabled: true,
 
         currentPrice: 1,
         selectedPrice: 1,
@@ -957,6 +958,15 @@
         }
 
         updateMainButtonState();
+        state.chatEnabled = data.chat_enabled !== false;
+if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
+    chatMessageInput.disabled = !state.chatEnabled;
+    sendChatBtn.disabled = !state.chatEnabled;
+    toggleEmojiBtn.disabled = !state.chatEnabled;
+    chatMessageInput.placeholder = state.chatEnabled
+        ? 'Написать в чат...'
+        : 'Чат временно закрыт админом';
+}
     }
 
     async function checkLockStatus() {
