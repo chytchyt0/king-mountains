@@ -302,13 +302,15 @@
         }
 
         canvasWrapper.classList.add('ring-4', 'ring-amber-400', 'shadow-2xl');
-        newKingToastText.textContent = `${king.name} занял трон за ${king.price} ₽!`;
+        newKingToastText.textContent = king.aiComment 
+            ? `${king.name} занял трон за ${king.price} ₽! 🤖 ИИ: «${king.aiComment}»`
+            : `${king.name} занял трон за ${king.price} ₽!`;
         newKingToast.classList.remove('hidden');
 
         setTimeout(() => {
             canvasWrapper.classList.remove('ring-4', 'ring-amber-400', 'shadow-2xl');
             newKingToast.classList.add('hidden');
-        }, 4500);
+        }, 6500);
     }
     // =================================================================
 
@@ -1179,7 +1181,7 @@
         updateMainButtonState();
     }
 
-    // Публикация с ИИ-премодерацией через Edge Function moderate-publish
+    // Публикация с ИИ-премодерацией и комментарием от ИИ
     finalPublishBtn.addEventListener('click', async () => {
         confirmPublishModal.classList.add('hidden');
         finalPublishBtn.disabled = true;
@@ -1444,6 +1446,7 @@
                         shieldUntil: row.shield_until,
                         likes: row.likes || 0,
                         isBanned: Boolean(row.is_banned) || isSvgBanned,
+                        aiComment: row.ai_comment || '',
                         timeStr: timeStr,
                         imageDataUrl: row.image_data
                     };
