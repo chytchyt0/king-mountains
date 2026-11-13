@@ -1182,7 +1182,7 @@
         const origBtnHtml = openConfirmPublishModalBtn.innerHTML;
         openConfirmPublishModalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Проверяем работу...</span>';
 
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
 
         const b = state.bookingData;
         const token = state.orderToken || localStorage.getItem('tsar_pending_order_token');
