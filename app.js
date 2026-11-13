@@ -100,6 +100,8 @@
     const kingSocialWrapper = document.getElementById('kingSocialWrapper');
     const kingSocialLink = document.getElementById('kingSocialLink');
     const kingSocialText = document.getElementById('kingSocialText');
+    const kingAiCommentWrapper = document.getElementById('kingAiCommentWrapper');
+    const kingAiCommentText = document.getElementById('kingAiCommentText');
     const kingAvatarDefault = document.getElementById('kingAvatarDefault');
     const kingAvatarImg = document.getElementById('kingAvatarImg');
 
@@ -191,6 +193,8 @@
     const viewArtPrice = document.getElementById('viewArtPrice');
     const viewArtTime = document.getElementById('viewArtTime');
     const viewArtImage = document.getElementById('viewArtImage');
+    const viewArtAiCommentBox = document.getElementById('viewArtAiCommentBox');
+    const viewArtAiCommentText = document.getElementById('viewArtAiCommentText');
     const likeArtBtn = document.getElementById('likeArtBtn');
     const likeArtIcon = document.getElementById('likeArtIcon');
     const likeArtCount = document.getElementById('likeArtCount');
@@ -1018,7 +1022,7 @@
 
         // Показываем таймер 20:00 прямо внутри верхней карточки Царя
         clearInterval(state.immunityInterval);
-        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3 py-2';
+        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3 py-2 shrink-0';
         statusTimerIcon.className = 'fa-regular fa-clock text-indigo-600 animate-pulse';
         statusTimerTitle.textContent = 'Твоё время:';
         statusTimerTitle.className = 'text-indigo-800';
@@ -1278,7 +1282,7 @@
         if (state.isMyTurnDrawing) return;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
-        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2';
+        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 shrink-0';
         statusTimerIcon.className = 'fa-solid fa-shield-halved text-amber-600 animate-pulse';
         statusTimerTitle.textContent = 'Иммунитет:';
         statusTimerTitle.className = 'text-amber-800';
@@ -1335,6 +1339,13 @@
             viewArtAuthorLink.classList.remove('hidden');
         } else {
             viewArtAuthorLink.classList.add('hidden');
+        }
+
+        if (art.aiComment && !art.isBanned) {
+            viewArtAiCommentText.textContent = `Вердикт ИИ: «${art.aiComment}»`;
+            viewArtAiCommentBox.classList.remove('hidden');
+        } else {
+            viewArtAiCommentBox.classList.add('hidden');
         }
 
         viewArtModal.classList.remove('hidden');
@@ -1483,6 +1494,13 @@
                     kingSocialWrapper.classList.add('hidden');
                 }
 
+                if (king.aiComment) {
+                    kingAiCommentText.textContent = `ИИ: «${king.aiComment}»`;
+                    kingAiCommentWrapper.classList.remove('hidden');
+                } else {
+                    kingAiCommentWrapper.classList.add('hidden');
+                }
+
                 if (!state.isMyTurnDrawing) {
                     drawImageFromDataUrl(king.imageDataUrl);
                     emptyCanvasOverlay.classList.add('hidden');
@@ -1501,6 +1519,7 @@
                 kingName.textContent = 'Никто (холст свободен)';
                 kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
+                kingAiCommentWrapper.classList.add('hidden');
                 clearImmunityUI();
                 if (!state.isMyTurnDrawing) {
                     fillCanvasWhite();
@@ -1516,6 +1535,7 @@
             kingName.textContent = 'Никто (холст свободен)';
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
+            kingAiCommentWrapper.classList.add('hidden');
             clearImmunityUI();
             fillCanvasWhite();
             emptyCanvasOverlay.classList.remove('hidden');
