@@ -2,6 +2,7 @@
     const SUPABASE_URL = 'https://azivkmabyjtyzkrjhwxg.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Goz2iCXq20ySsctUBX1MWg_5ZpD7eVQ';
     const PAY_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/yookassa-pay`;
+    const MODERATE_PUBLISH_URL = `${SUPABASE_URL}/functions/v1/moderate-publish`;
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Генерация постоянного анонимного ника для вкладки
@@ -137,6 +138,10 @@
     const welcomeModal = document.getElementById('welcomeModal');
     const closeWelcomeModalBtn = document.getElementById('closeWelcomeModalBtn');
 
+    const unlockWarningModal = document.getElementById('unlockWarningModal');
+    const openRulesFromWarningBtn = document.getElementById('openRulesFromWarningBtn');
+    const closeUnlockWarningBtn = document.getElementById('closeUnlockWarningBtn');
+
     const rulesModal = document.getElementById('rulesModal');
     const openRulesBtn = document.getElementById('openRulesBtn');
     const closeRulesModalBtn = document.getElementById('closeRulesModalBtn');
@@ -209,6 +214,14 @@
         localStorage.setItem('tsar_welcome_seen', '1');
         welcomeModal.classList.add('hidden');
         unlockAudio();
+    });
+
+    // Обработчики модального окна-предупреждения при разблокировке холста
+    openRulesFromWarningBtn.addEventListener('click', () => {
+        rulesModal.classList.remove('hidden');
+    });
+    closeUnlockWarningBtn.addEventListener('click', () => {
+        unlockWarningModal.classList.add('hidden');
     });
 
     function formatInstagramData(rawInput) {
@@ -458,6 +471,7 @@
 
     function checkAnyModalOpen() {
         return !welcomeModal.classList.contains('hidden') ||
+               !unlockWarningModal.classList.contains('hidden') ||
                !rulesModal.classList.contains('hidden') ||
                !infoModal.classList.contains('hidden') ||
                !offerModal.classList.contains('hidden') ||
@@ -997,7 +1011,10 @@
         drawingToolbar.classList.remove('hidden');
         updateMainButtonState();
 
-        // Показываем таймер 20:00 прямо внутри верхней карточки Царя, чтобы холст не сдвигался ни на пиксель
+        // Показываем предупреждение при разблокировке холста
+        unlockWarningModal.classList.remove('hidden');
+
+        // Показываем таймер 20:00 прямо внутри верхней карточки Царя
         clearInterval(state.immunityInterval);
         immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3 py-2';
         statusTimerIcon.className = 'fa-regular fa-clock text-indigo-600 animate-pulse';
@@ -1149,6 +1166,7 @@
 
     function finishDrawingSession() {
         closeStampMode();
+        unlockWarningModal.classList.add('hidden');
         state.isMyTurnDrawing = false;
         state.orderToken = null;
         localStorage.removeItem('tsar_pending_order_token');
@@ -1161,10 +1179,13 @@
         updateMainButtonState();
     }
 
+    // Публикация с ИИ-премодерацией через Edge Function moderate-publish
     finalPublishBtn.addEventListener('click', async () => {
         confirmPublishModal.classList.add('hidden');
         finalPublishBtn.disabled = true;
-        finalPublishBtn.textContent = 'Публикуем...';
+        openConfirmPublishModalBtn.disabled = true;
+        const origBtnHtml = openConfirmPublishModalBtn.innerHTML;
+        openConfirmPublishModalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Проверяем работу...</span>';
 
         let imageDataUrl = canvas.toDataURL('image/png');
         if (imageDataUrl.length > 750000) {
@@ -1174,25 +1195,42 @@
         const b = state.bookingData;
         const token = state.orderToken || localStorage.getItem('tsar_pending_order_token');
 
-        const { data, error } = await supabaseClient.rpc('publish_canvas', {
-            p_name: b.name,
-            p_link: b.social,
-            p_avatar: b.avatar,
-            p_image: imageDataUrl,
-            p_price: b.price,
-            p_token: token
-        });
+        try {
+            const res = await fetch(MODERATE_PUBLISH_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    name: b.name,
+                    link: b.social,
+                    avatar: b.avatar,
+                    image: imageDataUrl,
+                    price: b.price,
+                    token: token
+                })
+            });
 
-        finalPublishBtn.disabled = false;
-        finalPublishBtn.textContent = 'Да, опубликовать!';
+            const data = await res.json();
 
-        if (error || !data || !data.ok) {
-            alert('Ошибка публикации: ' + (data?.error || error?.message || 'Ошибка сервера'));
-            return;
+            finalPublishBtn.disabled = false;
+            openConfirmPublishModalBtn.disabled = false;
+            openConfirmPublishModalBtn.innerHTML = origBtnHtml;
+
+            if (!data.ok) {
+                alert(data.error || 'Ошибка публикации');
+                return;
+            }
+
+            finishDrawingSession();
+            await syncFromDatabase();
+        } catch (err) {
+            finalPublishBtn.disabled = false;
+            openConfirmPublishModalBtn.disabled = false;
+            openConfirmPublishModalBtn.innerHTML = origBtnHtml;
+            alert('Ошибка соединения при проверке работы. Попробуйте нажать «Опубликовать» ещё раз.');
         }
-
-        finishDrawingSession();
-        await syncFromDatabase();
     });
 
     chooseBaseArtBtn.addEventListener('click', () => {
@@ -1238,7 +1276,6 @@
         if (state.isMyTurnDrawing) return;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
-        // Возвращаем золотой стиль щита иммунитета
         immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2';
         statusTimerIcon.className = 'fa-solid fa-shield-halved text-amber-600 animate-pulse';
         statusTimerTitle.textContent = 'Иммунитет:';
