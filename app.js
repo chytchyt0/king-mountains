@@ -22,11 +22,8 @@
         paymentsEnabled: true,
         maintenanceMode: false,
 
-        currentPrice: 10,
-        autoNextPrice: 11,
-        customMinPrice: 11,
-        customMaxPrice: 13,
-        selectedPrice: 11,
+        currentPrice: 1,
+        selectedPrice: 1,
 
         orderToken: null,
         bookingData: null,
@@ -175,12 +172,7 @@
     const authorSocialInput = document.getElementById('authorSocialInput');
     const authorAvatarInput = document.getElementById('authorAvatarInput');
     const bookingAvatarPreview = document.getElementById('bookingAvatarPreview');
-    const priceOptionAuto = document.getElementById('priceOptionAuto');
-    const priceOptionCustom = document.getElementById('priceOptionCustom');
-    const priceAutoDisplay = document.getElementById('priceAutoDisplay');
-    const customPriceInputBox = document.getElementById('customPriceInputBox');
-    const customPriceInput = document.getElementById('customPriceInput');
-    const customPriceRangeHint = document.getElementById('customPriceRangeHint');
+    const priceFixedDisplay = document.getElementById('priceFixedDisplay');
     const submitBookingBtnText = document.getElementById('submitBookingBtnText');
     const submitBookingBtn = document.getElementById('submitBookingBtn');
 
@@ -440,16 +432,6 @@
         await loadChatMessages();
     });
     // ========================================================
-
-    function calculateAuctionPrices(basePrice) {
-        const autoPrice = Math.max(Math.ceil(basePrice * 1.05), basePrice + 1);
-        const maxPrice = Math.max(Math.ceil(basePrice * 1.25), autoPrice);
-        return {
-            autoPrice,
-            minCustom: autoPrice,
-            maxCustom: maxPrice
-        };
-    }
 
     function formatTime(sec) {
         const m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -888,39 +870,14 @@
     closePrivacyModalBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
     confirmPrivacyBtn.addEventListener('click', () => privacyModal.classList.add('hidden'));
 
+    // Фиксированная цена захвата (без ручного ввода)
     function refreshBookingPriceInputs() {
-        const prices = calculateAuctionPrices(state.currentPrice);
-        state.autoNextPrice = prices.autoPrice;
-        state.customMinPrice = prices.minCustom;
-        state.customMaxPrice = prices.maxCustom;
-
-        priceAutoDisplay.textContent = `${state.autoNextPrice} ₽`;
-        customPriceRangeHint.textContent = `Диапазон: от ${state.customMinPrice} ₽ до ${state.customMaxPrice} ₽`;
-        customPriceInput.min = state.customMinPrice;
-        customPriceInput.max = state.customMaxPrice;
-        customPriceInput.value = state.customMinPrice;
-
-        if (priceOptionAuto.checked) {
-            state.selectedPrice = state.autoNextPrice;
-            submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
-            customPriceInputBox.classList.add('hidden');
-        } else {
-            state.selectedPrice = parseInt(customPriceInput.value, 10) || state.customMinPrice;
-            submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
-            customPriceInputBox.classList.remove('hidden');
+        state.selectedPrice = Number(state.currentPrice) || 1;
+        if (priceFixedDisplay) {
+            priceFixedDisplay.textContent = `${state.selectedPrice} ₽`;
         }
-    }
-
-    priceOptionAuto.addEventListener('change', refreshBookingPriceInputs);
-    priceOptionCustom.addEventListener('change', refreshBookingPriceInputs);
-
-    customPriceInput.addEventListener('input', () => {
-        let val = parseInt(customPriceInput.value, 10);
-        if (isNaN(val)) val = state.customMinPrice;
-        if (val > state.customMaxPrice) val = state.customMaxPrice;
-        state.selectedPrice = val;
         submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
-    });
+    }
 
     authorAvatarInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -1135,7 +1092,7 @@
                     return;
                 }
 
-                if (result.ok && (result.status === 'used' || result.status === 'canceled')) {
+                if (result.ok && (result.status === 'used' || result.status === 'published' || result.status === 'canceled')) {
                     localStorage.removeItem('tsar_pending_order_token');
                     if (result.status === 'canceled') {
                         alert('Пока шла оплата, холст успел занять другой художник. Средства автоматически возвращены.');
@@ -1171,8 +1128,7 @@
                     action: 'create',
                     name,
                     link: cleanSocialNick,
-                    avatar: uploadedAvatarBase64,
-                    price: state.selectedPrice
+                    avatar: uploadedAvatarBase64
                 })
             });
 
@@ -1465,7 +1421,7 @@
         }
 
         if (data && data.length > 0) {
-            state.currentPrice = data[0].next_price;
+            state.currentPrice = Number(data[0].next_price) || 1;
             headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
 
             const latestWasModerated = Boolean(data[0].is_banned) || Boolean(data[0].is_hidden) || (data[0].image_data && data[0].image_data.startsWith('data:image/svg+xml'));
@@ -1552,8 +1508,8 @@
             }
         } else {
             state.lastKnownKingId = null;
-            state.currentPrice = 10;
-            headerCurrentPrice.textContent = '10 ₽';
+            state.currentPrice = 1;
+            headerCurrentPrice.textContent = '1 ₽';
             kingName.textContent = 'Никто (холст свободен)';
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
