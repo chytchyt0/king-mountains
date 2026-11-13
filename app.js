@@ -19,6 +19,9 @@
         lastKnownKingId: null,
         initialSyncDone: false,
 
+        paymentsEnabled: true,
+        maintenanceMode: false,
+
         currentPrice: 10,
         autoNextPrice: 11,
         customMinPrice: 11,
@@ -61,6 +64,9 @@
             dragOffsetY: 0
         }
     };
+
+    const maintenanceOverlay = document.getElementById('maintenanceOverlay');
+    const maintenanceText = document.getElementById('maintenanceText');
 
     const canvasWrapper = document.getElementById('canvasWrapper');
     const canvas = document.getElementById('mainCanvas');
@@ -942,6 +948,10 @@
     });
 
     startDrawBookingBtn.addEventListener('click', () => {
+        if (!state.paymentsEnabled) {
+            alert('Приём оплаты временно приостановлен администратором.');
+            return;
+        }
         refreshBookingPriceInputs();
         if (!authorNameInput.value.trim()) {
             authorNameInput.value = state.anonName;
@@ -961,10 +971,35 @@
         } else if (state.immunitySecondsLeft > 0) {
             startDrawBookingBtn.disabled = true;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-shield-halved"></i><span>Холст под защитой</span>';
+        } else if (!state.paymentsEnabled) {
+            startDrawBookingBtn.disabled = true;
+            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Приём заявок на паузе</span>';
         } else {
             startDrawBookingBtn.disabled = false;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое</span>';
         }
+    }
+
+    async function syncSiteSettings() {
+        const { data } = await supabaseClient
+            .from('site_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        if (!data) return;
+
+        state.paymentsEnabled = Boolean(data.payments_enabled);
+        state.maintenanceMode = Boolean(data.maintenance_mode);
+
+        if (state.maintenanceMode) {
+            maintenanceText.textContent = data.maintenance_message || 'Сайт временно закрыт на техническое обслуживание. Скоро вернёмся!';
+            maintenanceOverlay.classList.remove('hidden');
+        } else {
+            maintenanceOverlay.classList.add('hidden');
+        }
+
+        updateMainButtonState();
     }
 
     async function checkLockStatus() {
@@ -1191,7 +1226,6 @@
         const origBtnHtml = openConfirmPublishModalBtn.innerHTML;
         openConfirmPublishModalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Проверяем работу...</span>';
 
-        // Сжимаем в JPEG 0.85 для быстрой проверки ИИ и стабильной загрузки
         const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
         const b = state.bookingData;
@@ -1569,10 +1603,14 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_chat' }, () => {
             loadChatMessages();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
+            syncSiteSettings();
+        })
         .subscribe();
 
     setInterval(checkLockStatus, 2000);
     setInterval(loadChatMessages, 4000);
+    setInterval(syncSiteSettings, 8000);
     setInterval(() => {
         if (!state.isMyTurnDrawing) syncFromDatabase();
     }, 5000);
@@ -1608,6 +1646,7 @@
     setTimeout(syncColumnsHeight, 100);
     // ======================================================================================
 
+    syncSiteSettings();
     loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
 })();

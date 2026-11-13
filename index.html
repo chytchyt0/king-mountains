@@ -34,6 +34,22 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
+    <!-- ЭКРАН ТЕХНИЧЕСКОГО ОБСЛУЖИВАНИЯ -->
+    <div id="maintenanceOverlay" class="hidden fixed inset-0 z-[100] bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center select-none">
+        <div class="w-20 h-20 rounded-3xl bg-amber-500/20 border border-amber-400/40 text-amber-400 flex items-center justify-center text-4xl mb-5 animate-pulse">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+        </div>
+        <h2 class="font-display font-extrabold text-2xl sm:text-3xl tracking-tight">
+            Сайт на техническом обслуживании
+        </h2>
+        <p id="maintenanceText" class="text-slate-300 text-sm sm:text-base max-w-md mt-3 leading-relaxed">
+            Мы прямо сейчас обновляем «Царь Холста». Скоро всё заработает!
+        </p>
+        <div class="mt-6 text-xs text-slate-400">
+            Поддержка: <a href="https://t.me/king_canvas_bot" target="_blank" rel="noopener noreferrer" class="text-amber-400 underline font-bold">@king_canvas_bot</a>
+        </div>
+    </div>
+
     <div id="customBrushDot"></div>
 
     <!-- Верхний бар -->
