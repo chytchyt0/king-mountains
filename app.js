@@ -1193,7 +1193,7 @@
         const origBtnHtml = openConfirmPublishModalBtn.innerHTML;
         openConfirmPublishModalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Проверяем работу...</span>';
 
-        let imageDataUrl = canvas.toDataURL('image/png');
+        let imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         if (imageDataUrl.length > 750000) {
             imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         }
