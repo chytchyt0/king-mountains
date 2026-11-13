@@ -100,8 +100,6 @@
     const kingSocialWrapper = document.getElementById('kingSocialWrapper');
     const kingSocialLink = document.getElementById('kingSocialLink');
     const kingSocialText = document.getElementById('kingSocialText');
-    const kingAiCommentWrapper = document.getElementById('kingAiCommentWrapper');
-    const kingAiCommentText = document.getElementById('kingAiCommentText');
     const kingAvatarDefault = document.getElementById('kingAvatarDefault');
     const kingAvatarImg = document.getElementById('kingAvatarImg');
 
@@ -1022,13 +1020,13 @@
 
         // Показываем таймер 20:00 прямо внутри верхней карточки Царя
         clearInterval(state.immunityInterval);
-        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3 py-2 shrink-0';
+        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3.5 py-2.5 shrink-0';
         statusTimerIcon.className = 'fa-regular fa-clock text-indigo-600 animate-pulse';
         statusTimerTitle.textContent = 'Твоё время:';
         statusTimerTitle.className = 'text-indigo-800';
-        immunityTimerText.className = 'font-mono font-bold text-indigo-700 text-sm sm:text-base';
+        immunityTimerText.className = 'font-mono font-bold text-indigo-700 text-base sm:text-lg';
         statusTimerSub.textContent = 'Твори свой шедевр!';
-        statusTimerSub.className = 'text-[10px] text-indigo-600/90 mt-0.5';
+        statusTimerSub.className = 'text-[11px] text-indigo-600/90 mt-0.5';
 
         canvas.classList.remove('canvas-default', 'canvas-shielded');
         canvas.classList.add('canvas-editing');
@@ -1193,10 +1191,8 @@
         const origBtnHtml = openConfirmPublishModalBtn.innerHTML;
         openConfirmPublishModalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Проверяем работу...</span>';
 
-        let imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        if (imageDataUrl.length > 750000) {
-            imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        }
+        // Сжимаем в JPEG 0.85 для быстрой проверки ИИ и стабильной загрузки
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
         const b = state.bookingData;
         const token = state.orderToken || localStorage.getItem('tsar_pending_order_token');
@@ -1282,13 +1278,13 @@
         if (state.isMyTurnDrawing) return;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
-        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 shrink-0';
+        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 shrink-0';
         statusTimerIcon.className = 'fa-solid fa-shield-halved text-amber-600 animate-pulse';
         statusTimerTitle.textContent = 'Иммунитет:';
         statusTimerTitle.className = 'text-amber-800';
-        immunityTimerText.className = 'font-mono font-bold text-amber-700 text-sm sm:text-base';
+        immunityTimerText.className = 'font-mono font-bold text-amber-700 text-base sm:text-lg';
         statusTimerSub.textContent = 'Холст защищен от перебития';
-        statusTimerSub.className = 'text-[10px] text-amber-600/90 mt-0.5';
+        statusTimerSub.className = 'text-[11px] text-amber-600/90 mt-0.5';
 
         function checkTime() {
             if (state.isMyTurnDrawing) return;
@@ -1398,7 +1394,7 @@
             const instaData = formatInstagramData(item.social);
             const subText = item.isBanned 
                 ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
-                : escapeHtml(instaData ? instaData.display : 'без соцсетей');
+                : escapeHtml(instaData ? `Instagram*: ${instaData.display}` : 'без соцсетей');
 
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-12 h-9 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
@@ -1494,13 +1490,6 @@
                     kingSocialWrapper.classList.add('hidden');
                 }
 
-                if (king.aiComment) {
-                    kingAiCommentText.textContent = `ИИ: «${king.aiComment}»`;
-                    kingAiCommentWrapper.classList.remove('hidden');
-                } else {
-                    kingAiCommentWrapper.classList.add('hidden');
-                }
-
                 if (!state.isMyTurnDrawing) {
                     drawImageFromDataUrl(king.imageDataUrl);
                     emptyCanvasOverlay.classList.add('hidden');
@@ -1519,7 +1508,6 @@
                 kingName.textContent = 'Никто (холст свободен)';
                 kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
-                kingAiCommentWrapper.classList.add('hidden');
                 clearImmunityUI();
                 if (!state.isMyTurnDrawing) {
                     fillCanvasWhite();
@@ -1535,7 +1523,6 @@
             kingName.textContent = 'Никто (холст свободен)';
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
-            kingAiCommentWrapper.classList.add('hidden');
             clearImmunityUI();
             fillCanvasWhite();
             emptyCanvasOverlay.classList.remove('hidden');
