@@ -74,10 +74,6 @@
     const newKingToast = document.getElementById('newKingToast');
     const newKingToastText = document.getElementById('newKingToastText');
 
-    const toggleSoundBtn = document.getElementById('toggleSoundBtn');
-    const soundIcon = document.getElementById('soundIcon');
-    const soundLabel = document.getElementById('soundLabel');
-
     const myAnonBadge = document.getElementById('myAnonBadge');
     const chatMessagesList = document.getElementById('chatMessagesList');
     const emptyChatText = document.getElementById('emptyChatText');
@@ -251,48 +247,9 @@
         };
     }
 
-    // ================= ЗВУК И КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
-    const winSound = new Audio('fanfare.mp3');
-    winSound.preload = 'auto';
-    winSound.volume = 0.8;
-
-    function unlockAudio() {
-        winSound.play().then(() => {
-            winSound.pause();
-            winSound.currentTime = 0;
-        }).catch(() => {});
-    }
-    window.addEventListener('pointerdown', unlockAudio, { once: true });
-
-    function updateSoundButtonUI() {
-        if (state.soundEnabled) {
-            soundIcon.className = 'fa-solid fa-volume-high text-indigo-500';
-            soundLabel.textContent = 'Звук вкл';
-        } else {
-            soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
-            soundLabel.textContent = 'Без звука';
-        }
-    }
-    updateSoundButtonUI();
-
-    toggleSoundBtn.addEventListener('click', () => {
-        state.soundEnabled = !state.soundEnabled;
-        localStorage.setItem('tsar_sound_enabled', state.soundEnabled);
-        updateSoundButtonUI();
-        if (state.soundEnabled) {
-            playFanfareSound();
-        }
-    });
-
-    function playFanfareSound() {
-        if (!state.soundEnabled) return;
-        try {
-            winSound.currentTime = 0;
-            winSound.play().catch(err => console.warn('Автозапуск звука заблокирован браузером:', err));
-        } catch (e) {
-            console.warn('Audio error:', e);
-        }
-    }
+    // ================= КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
+    function unlockAudio() {}
+    function playFanfareSound() {}
 
     function triggerNewKingCelebration(king) {
         playFanfareSound();
@@ -1026,21 +983,22 @@
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
 
     function updateMainButtonState() {
+        const priceVal = Number(state.currentPrice) || 1;
         if (state.isMyTurnDrawing) {
             startDrawBookingBtn.disabled = true;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-palette"></i><span>Ты сейчас рисуешь!</span>';
         } else if (state.someoneElseDrawing) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-lock"></i><span>Холст занят художником</span>';
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Холст занят (${priceVal} ₽)</span>`;
         } else if (state.immunitySecondsLeft > 0) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-shield-halved"></i><span>Холст под защитой</span>';
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>Под защитой (${priceVal} ₽)</span>`;
         } else if (!state.paymentsEnabled) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Приём заявок на паузе</span>';
+            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Заявки на паузе</span>';
         } else {
             startDrawBookingBtn.disabled = false;
-            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое</span>';
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое за <span id="headerCurrentPrice">${priceVal} ₽</span></span>`;
         }
     }
 
@@ -1538,7 +1496,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
 
         if (data && data.length > 0) {
             state.currentPrice = Number(data[0].next_price) || 1;
-            headerCurrentPrice.textContent = `${state.currentPrice} ₽`;
+            const priceEl = document.getElementById('headerCurrentPrice'); if (priceEl) priceEl.textContent = `${state.currentPrice} ₽`; updateMainButtonState();
 
             const latestWasModerated = Boolean(data[0].is_banned) || Boolean(data[0].is_hidden) || (data[0].image_data && data[0].image_data.startsWith('data:image/svg+xml'));
 
@@ -1625,7 +1583,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
         } else {
             state.lastKnownKingId = null;
             state.currentPrice = 1;
-            headerCurrentPrice.textContent = '1 ₽';
+            const priceEl = document.getElementById('headerCurrentPrice'); if (priceEl) priceEl.textContent = '1 ₽'; updateMainButtonState();
             kingName.textContent = 'Никто (холст свободен)';
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
