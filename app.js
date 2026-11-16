@@ -124,7 +124,17 @@
     const toolBrushBtn = document.getElementById('toolBrushBtn');
     const toolFillBtn = document.getElementById('toolFillBtn');
     const toolPipetteBtn = document.getElementById('toolPipetteBtn');
+    const toolTextBtn = document.getElementById('toolTextBtn');
     const toolEraserBtn = document.getElementById('toolEraserBtn');
+
+    const textToolModal = document.getElementById('textToolModal');
+    const closeTextToolModalBtn = document.getElementById('closeTextToolModalBtn');
+    const cancelTextToolBtn = document.getElementById('cancelTextToolBtn');
+    const canvasTextInput = document.getElementById('canvasTextInput');
+    const canvasTextFontSelect = document.getElementById('canvasTextFontSelect');
+    const canvasTextStrokeSelect = document.getElementById('canvasTextStrokeSelect');
+    const canvasTextColorPicker = document.getElementById('canvasTextColorPicker');
+    const createTextStampBtn = document.getElementById('createTextStampBtn');
     const undoBtn = document.getElementById('undoBtn');
     const insertImageInput = document.getElementById('insertImageInput');
     const chooseBaseArtBtn = document.getElementById('chooseBaseArtBtn');
@@ -472,7 +482,8 @@
                !bookingModal.classList.contains('hidden') ||
                !confirmPublishModal.classList.contains('hidden') ||
                !viewArtModal.classList.contains('hidden') ||
-               !chooseBaseModal.classList.contains('hidden');
+               !chooseBaseModal.classList.contains('hidden') ||
+               (textToolModal && !textToolModal.classList.contains('hidden'));
     }
 
     function updateBrushDot(e) {
@@ -853,6 +864,101 @@
         saveUndoState();
         closeStampMode();
     });
+
+    // ================= ИНСТРУМЕНТ "ТЕКСТ" ЧЕРЕЗ ШТАМП =================
+    function closeTextToolModal() {
+        if (textToolModal) textToolModal.classList.add('hidden');
+    }
+
+    if (toolTextBtn) {
+        toolTextBtn.addEventListener('click', () => {
+            if (!state.isMyTurnDrawing) return;
+            canvasTextInput.value = '';
+            canvasTextColorPicker.value = state.brushColor || '#0f172a';
+            textToolModal.classList.remove('hidden');
+            setTimeout(() => canvasTextInput.focus(), 50);
+        });
+    }
+
+    if (closeTextToolModalBtn) closeTextToolModalBtn.addEventListener('click', closeTextToolModal);
+    if (cancelTextToolBtn) cancelTextToolBtn.addEventListener('click', closeTextToolModal);
+
+    function renderTextToImage(rawText, fontStyle, strokeMode, fillColor, callback) {
+        const lines = rawText.split(/\r?\n/).map(l => l.trimEnd()).filter(l => l.length > 0);
+        if (lines.length === 0) return;
+
+        const fontSize = 84;
+        const lineHeight = Math.round(fontSize * 1.18);
+        let fontCss = `800 ${fontSize}px 'Inter', Arial, sans-serif`;
+        if (fontStyle === 'meme') {
+            fontCss = `900 ${fontSize}px Impact, 'Arial Black', sans-serif`;
+        } else if (fontStyle === 'hand') {
+            fontCss = `italic 700 ${fontSize}px 'Comic Sans MS', 'Segoe Print', cursive`;
+        } else if (fontStyle === 'mono') {
+            fontCss = `700 ${fontSize}px 'Courier New', monospace`;
+        }
+
+        const measureCanvas = document.createElement('canvas');
+        const mCtx = measureCanvas.getContext('2d');
+        mCtx.font = fontCss;
+
+        let maxLineWidth = 0;
+        lines.forEach(line => {
+            const w = mCtx.measureText(line).width;
+            if (w > maxLineWidth) maxLineWidth = w;
+        });
+
+        const padding = 28;
+        const totalW = Math.max(Math.ceil(maxLineWidth + padding * 2), 60);
+        const totalH = Math.max(Math.ceil(lines.length * lineHeight + padding * 2), 60);
+
+        const textCanvas = document.createElement('canvas');
+        textCanvas.width = totalW;
+        textCanvas.height = totalH;
+        const tCtx = textCanvas.getContext('2d');
+
+        tCtx.font = fontCss;
+        tCtx.textAlign = 'center';
+        tCtx.textBaseline = 'middle';
+        tCtx.lineJoin = 'round';
+        tCtx.lineCap = 'round';
+
+        lines.forEach((line, idx) => {
+            const yPos = padding + lineHeight * idx + lineHeight / 2;
+            const xPos = totalW / 2;
+
+            if (strokeMode === 'black' || strokeMode === 'white') {
+                tCtx.strokeStyle = strokeMode === 'black' ? '#0f172a' : '#ffffff';
+                tCtx.lineWidth = 12;
+                tCtx.strokeText(line, xPos, yPos);
+            }
+
+            tCtx.fillStyle = fillColor;
+            tCtx.fillText(line, xPos, yPos);
+        });
+
+        const img = new Image();
+        img.onload = () => callback(img);
+        img.src = textCanvas.toDataURL('image/png');
+    }
+
+    if (createTextStampBtn) {
+        createTextStampBtn.addEventListener('click', () => {
+            const rawText = canvasTextInput.value.trim();
+            if (!rawText) {
+                canvasTextInput.focus();
+                return;
+            }
+            const fontStyle = canvasTextFontSelect.value;
+            const strokeMode = canvasTextStrokeSelect.value;
+            const fillColor = canvasTextColorPicker.value;
+
+            renderTextToImage(rawText, fontStyle, strokeMode, fillColor, (textImg) => {
+                closeTextToolModal();
+                openStampMode(textImg);
+            });
+        });
+    }
     // =============================================================
 
     openRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
