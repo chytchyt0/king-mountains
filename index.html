@@ -63,7 +63,7 @@
                     <h1 class="font-display font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">
                         ЦАРЬ ХОЛСТА
                     </h1>
-                    <p class="text-xs text-slate-500">Опубликуй свой текст, мем или рисунок</p>
+                    <p class="text-xs text-slate-500">Перебей чужой шедевр (+50% к цене). Зачем? Да кто его знает</p>
                 </div>
             </div>
 
@@ -77,15 +77,15 @@
                     <span>Нарисовать свое за <span id="headerCurrentPrice">1 ₽</span></span>
                 </button>
 
-                <div class="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
-                </div>
-
                 <button type="button" id="openRulesBtn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-info text-indigo-500"></i>
                     <span>Правила</span>
                 </button>
+
+                <div class="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
+                </div>
             </div>
         </div>
     </header>
@@ -212,6 +212,11 @@
                         </div>
                         <span id="statusTimerSub" class="text-[11px] text-amber-600/90 mt-0.5">Холст защищен от перебития</span>
                     </div>
+                </div>
+
+                <!-- Плашка-подсказка про механику и азарт -->
+                <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-500">
+                    <span>🤷‍♂️ Хз зачем вам это перебивать, но если очень хочется — закрасьте работу сверху, и для следующего цена вырастет на <strong class="text-slate-700">+50%</strong>.</span>
                 </div>
             </div>
 
@@ -427,7 +432,7 @@
                 Добро пожаловать в «Царь Холста»!
             </h2>
             <p class="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed">
-                Это живой интерактивный арт-холст для всех. Займи трон, нарисуй свой арт или мем, оставь ник в Instagram* — первые <strong>10 минут</strong> у твоей работы действует иммунитет, а дальше она висит на главном экране у всех на виду, <strong>пока её не сменит следующий Царь</strong>!
+                Хз зачем, но я сделал один общий холст на весь интернет. Кидаешь копейки — рисуешь арт, пишешь слово или лепишь мем — и <strong>10 минут</strong> тебя вообще никто не может тронуть. После каждой публикации цена захвата вырастает на <strong>+50%</strong>. Проверим, насколько далеко зайдёт эта дичь?
             </p>
 
             <div class="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-left text-xs text-slate-600 space-y-1.5">
