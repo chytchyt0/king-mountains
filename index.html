@@ -67,12 +67,12 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <div class="flex flex-col items-center">
+            <div class="w-full sm:w-auto flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-2 sm:gap-3">
+                <div class="w-full sm:w-auto flex flex-col items-center">
                     <button 
                         type="button" 
                         id="startDrawBookingBtn"
-                        class="py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
+                        class="w-full sm:w-auto py-2.5 sm:py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
                     >
                         <i class="fa-solid fa-paintbrush"></i>
                         <span>Нарисовать свое за <span id="headerCurrentPrice">1 ₽</span></span>
@@ -82,14 +82,16 @@
                     </span>
                 </div>
 
-                <button type="button" id="openRulesBtn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                    <span>Правила</span>
-                </button>
+                <div class="w-full sm:w-auto flex items-center justify-center gap-2">
+                    <button type="button" id="openRulesBtn" class="flex-1 sm:flex-initial justify-center px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                        <span>Правила</span>
+                    </button>
 
-                <div class="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
+                    <div class="flex-1 sm:flex-initial justify-center flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium text-slate-600">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Онлайн: <strong id="statOnline" class="text-slate-800">1</strong></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -184,7 +186,7 @@
                 <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3.5 lg:gap-5 w-full">
                     
                     <!-- 1. Левая зона: Аватар с короной набок + Имя Царя -->
-                    <div class="flex items-center gap-4 min-w-0 flex-1">
+                    <div class="flex items-center gap-3.5 sm:gap-4 min-w-0 w-full lg:w-auto lg:flex-1">
                         <div class="relative shrink-0">
                             <!-- Корона на бок поверх угла аватарки -->
                             <div class="pointer-events-none absolute -top-3 -right-2.5 z-10 w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 border-2 border-white shadow-md flex items-center justify-center transform rotate-[22deg]" title="Царь Холста">
@@ -196,11 +198,11 @@
                             </div>
                         </div>
 
-                        <div id="kingInfoContainer" class="min-w-0 flex-1 overflow-hidden">
+                        <div id="kingInfoContainer" class="min-w-0 flex-1">
                             <span id="kingRoleLabel" class="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-amber-600/90 block leading-none">
                                 Текущий Царь Холста
                             </span>
-                            <h2 id="kingName" class="inline-block font-display font-extrabold text-xl sm:text-3xl tracking-tight text-slate-900 mt-1.5 whitespace-nowrap leading-none">
+                            <h2 id="kingName" class="block w-full font-display font-extrabold text-xl sm:text-3xl tracking-tight text-slate-900 mt-1.5 truncate leading-tight">
                                 Никто (холст свободен)
                             </h2>
                         </div>

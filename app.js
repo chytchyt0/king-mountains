@@ -462,22 +462,22 @@
 
     function fitKingNameSize() {
         if (!kingName || !kingInfoContainer) return;
-        const availableWidth = kingInfoContainer.clientWidth;
-        if (availableWidth <= 0) return;
-
         kingName.style.transform = '';
         kingName.style.letterSpacing = '';
-        kingName.style.display = 'inline-block';
-        kingName.style.width = 'auto';
+        kingName.style.display = 'block';
+        kingName.style.width = '100%';
 
-        const maxFont = window.innerWidth < 640 ? 22 : 34;
+        const availableWidth = kingInfoContainer.clientWidth;
+        const maxFont = window.innerWidth < 640 ? 20 : 32;
         const minFont = 14;
         let currentFont = maxFont;
         kingName.style.fontSize = `${currentFont}px`;
 
-        while (kingName.scrollWidth > availableWidth && currentFont > minFont) {
-            currentFont -= 1;
-            kingName.style.fontSize = `${currentFont}px`;
+        if (availableWidth > 40) {
+            while (kingName.scrollWidth > availableWidth && currentFont > minFont) {
+                currentFont -= 1;
+                kingName.style.fontSize = `${currentFont}px`;
+            }
         }
     }
     window.addEventListener('resize', fitKingNameSize);
@@ -1170,10 +1170,10 @@
 
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
 
-    const BTN_CLASS_ACTIVE = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0';
-    const BTN_CLASS_IMMUNITY = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
-    const BTN_CLASS_LOCKED = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
-    const BTN_CLASS_DRAWING = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-indigo-100 text-indigo-800 border border-indigo-300 flex items-center justify-center gap-2 cursor-default select-none';
+    const BTN_CLASS_ACTIVE = 'w-full sm:w-auto py-2.5 sm:py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0';
+    const BTN_CLASS_IMMUNITY = 'w-full sm:w-auto py-2.5 sm:py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
+    const BTN_CLASS_LOCKED = 'w-full sm:w-auto py-2.5 sm:py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
+    const BTN_CLASS_DRAWING = 'w-full sm:w-auto py-2.5 sm:py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-indigo-100 text-indigo-800 border border-indigo-300 flex items-center justify-center gap-2 cursor-default select-none';
 
     function updateMainButtonState() {
         const priceVal = Number(state.currentPrice) || 1;
