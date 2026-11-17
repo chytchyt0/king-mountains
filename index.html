@@ -180,49 +180,47 @@
         <section id="centerCanvasCol" class="order-1 lg:order-2 flex-1 min-w-0 flex flex-col items-center w-full max-w-[1120px] mx-auto">
             
             <!-- Карточка Царя Горы (Визитка создателя) -->
-            <div id="kingBanner" class="w-full mb-3.5 rounded-2xl bg-white border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-4 min-w-0 flex-1">
-                        <div id="kingAvatarWrapper" class="w-16 h-16 max-w-[64px] max-h-[64px] rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-3xl shrink-0 shadow-sm">
-                            <span id="kingAvatarDefault">👑</span>
-                            <img id="kingAvatarImg" src="" alt="Аватарка" class="w-full h-full object-cover hidden">
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span id="kingRoleLabel" class="text-[11px] font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
-                                    <i class="fa-solid fa-crown text-[10px]"></i> Текущий Царь Холста
-                                </span>
-                                <span id="kingPriceBadge" class="hidden text-xs font-bold px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    Захватил за 1 ₽
-                                </span>
-                            </div>
-                            <h2 id="kingName" class="font-display font-extrabold text-lg sm:text-xl text-slate-900 mt-0.5 truncate">
-                                Никто <span class="text-slate-400 font-sans font-normal text-sm">(холст свободен)</span>
-                            </h2>
-                            <div id="kingSocialWrapper" class="hidden mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <a id="kingSocialLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-pink-600 hover:text-pink-700 bg-pink-50/80 hover:bg-pink-100/80 border border-pink-200/80 px-2.5 py-0.5 rounded-lg transition">
-                                    <span class="text-pink-500/80 font-semibold">Instagram*:</span>
-                                    <span id="kingSocialText" class="underline underline-offset-2">@username</span>
-                                </a>
-                                <a id="kingWebsiteLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-200/80 px-2.5 py-0.5 rounded-lg transition">
-                                    <i class="fa-solid fa-globe text-indigo-500 text-xs"></i>
-                                    <span id="kingWebsiteText" class="underline underline-offset-2">site.ru</span>
-                                </a>
-                            </div>
-                        </div>
+            <div id="kingBanner" class="w-full mb-3.5 rounded-2xl bg-gradient-to-r from-white via-white to-amber-50/40 border border-slate-200/80 p-3.5 sm:p-4 shadow-sm transition-all duration-300">
+                <div class="flex items-center gap-4 min-w-0 w-full">
+                    <div id="kingAvatarWrapper" class="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-3xl shrink-0 shadow-sm">
+                        <span id="kingAvatarDefault">👑</span>
+                        <img id="kingAvatarImg" src="" alt="Аватарка" class="w-full h-full object-cover hidden">
                     </div>
-
-                    <!-- Блок таймера иммунитета ИЛИ времени на рисование -->
-                    <div id="immunityBox" class="hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 shrink-0">
-                        <div class="flex items-center gap-2 text-amber-800 font-semibold text-xs sm:text-sm">
-                            <i id="statusTimerIcon" class="fa-solid fa-shield-halved text-amber-600 animate-pulse"></i>
-                            <span id="statusTimerTitle">Иммунитет:</span>
-                            <span id="immunityTimerText" class="font-mono font-bold text-amber-700 text-base sm:text-lg">10:00</span>
+                    <div id="kingInfoContainer" class="min-w-0 flex-1 overflow-hidden">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="kingRoleLabel" class="text-[11px] font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                                <i class="fa-solid fa-crown text-[10px]"></i> Текущий Царь Холста
+                            </span>
+                            <span id="kingPriceBadge" class="hidden text-xs font-bold px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Захватил за 1 ₽
+                            </span>
                         </div>
-                        <span id="statusTimerSub" class="text-[11px] text-amber-600/90 mt-0.5">Холст защищен от перебития</span>
+                        <h2 id="kingName" class="font-display font-extrabold text-2xl sm:text-3xl tracking-tight bg-gradient-to-r from-slate-950 via-slate-800 to-indigo-950 bg-clip-text text-transparent mt-0.5 whitespace-nowrap leading-tight">
+                            Никто (холст свободен)
+                        </h2>
+                        <div id="kingSocialWrapper" class="hidden mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <a id="kingSocialLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-pink-600 hover:text-pink-700 bg-pink-50/80 hover:bg-pink-100/80 border border-pink-200/80 px-2.5 py-0.5 rounded-lg transition">
+                                <span class="text-pink-500/80 font-semibold">Instagram*:</span>
+                                <span id="kingSocialText" class="underline underline-offset-2">@username</span>
+                            </a>
+                            <a id="kingWebsiteLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-200/80 px-2.5 py-0.5 rounded-lg transition">
+                                <i class="fa-solid fa-globe text-indigo-500 text-xs"></i>
+                                <span id="kingWebsiteText" class="underline underline-offset-2">site.ru</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Плашка режима тренировки -->
+            <div id="practiceModeBanner" class="hidden w-full mb-3 px-4 py-2.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🧪</span>
+                    <span><strong>Режим тренировки:</strong> рисунок виден только тебе, время не ограничено.</span>
+                </div>
+                <button type="button" id="exitPracticeTopBtn" class="px-3 py-1 rounded-lg bg-white hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs transition">
+                    Выйти из тренировки
+                </button>
             </div>
 
             <!-- Обертка Холста -->
@@ -379,10 +377,21 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                <div id="livePublishActions" class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
                     <button type="button" id="openConfirmPublishModalBtn" class="w-full sm:w-auto px-7 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition transform active:scale-95">
                         <i class="fa-solid fa-bolt"></i>
                         <span>Опубликовать шедевр на холст</span>
+                    </button>
+                </div>
+
+                <div id="practiceToolbarActions" class="hidden flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                    <button type="button" id="exitPracticeToolbarBtn" class="w-full sm:w-auto px-5 py-3 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Выйти из тренировки</span>
+                    </button>
+                    <button type="button" id="upgradePracticeToLiveBtn" class="w-full sm:w-auto px-6 py-3 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition transform active:scale-95">
+                        <i class="fa-solid fa-crown"></i>
+                        <span id="upgradePracticeToLiveBtnText">Готово! Занять трон за 1 ₽</span>
                     </button>
                 </div>
             </div>
@@ -683,6 +692,15 @@
                 >
                     <i class="fa-solid fa-lock-open"></i>
                     <span id="submitBookingBtnText">Оплатить 1 ₽ и открыть редактор</span>
+                </button>
+
+                <button 
+                    type="button" 
+                    id="startPracticeModeBtn"
+                    class="w-full py-2.5 px-4 rounded-xl font-sans font-bold text-xs sm:text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80 flex items-center justify-center gap-2 transition"
+                >
+                    <span>🎨</span>
+                    <span>Потренироваться / проверить редактор (бесплатно)</span>
                 </button>
             </form>
         </div>

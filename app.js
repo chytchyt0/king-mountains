@@ -29,8 +29,12 @@
         orderToken: null,
         bookingData: null,
         isMyTurnDrawing: false,
+        isPracticeMode: false,
+        practiceDraftDataUrl: null,
         someoneElseDrawing: false,
         lockedByName: '',
+        lockedSecondsLeft: 0,
+        lockedInterval: null,
 
         drawingSecondsLeft: 1200,
         drawingInterval: null,
@@ -104,12 +108,16 @@
     const kingWebsiteText = document.getElementById('kingWebsiteText');
     const kingAvatarDefault = document.getElementById('kingAvatarDefault');
     const kingAvatarImg = document.getElementById('kingAvatarImg');
+    const kingInfoContainer = document.getElementById('kingInfoContainer');
 
-    const immunityBox = document.getElementById('immunityBox');
-    const statusTimerIcon = document.getElementById('statusTimerIcon');
-    const statusTimerTitle = document.getElementById('statusTimerTitle');
-    const immunityTimerText = document.getElementById('immunityTimerText');
-    const statusTimerSub = document.getElementById('statusTimerSub');
+    const practiceModeBanner = document.getElementById('practiceModeBanner');
+    const exitPracticeTopBtn = document.getElementById('exitPracticeTopBtn');
+    const livePublishActions = document.getElementById('livePublishActions');
+    const practiceToolbarActions = document.getElementById('practiceToolbarActions');
+    const exitPracticeToolbarBtn = document.getElementById('exitPracticeToolbarBtn');
+    const upgradePracticeToLiveBtn = document.getElementById('upgradePracticeToLiveBtn');
+    const upgradePracticeToLiveBtnText = document.getElementById('upgradePracticeToLiveBtnText');
+    const startPracticeModeBtn = document.getElementById('startPracticeModeBtn');
 
     const drawingToolbar = document.getElementById('drawingToolbar');
     const viewModeControls = document.getElementById('viewModeControls');
@@ -450,6 +458,23 @@
     });
     // ========================================================
 
+    function fitKingNameSize() {
+        if (!kingName || !kingInfoContainer) return;
+        const maxFont = window.innerWidth < 640 ? 22 : 34;
+        const minFont = 14;
+        let currentFont = maxFont;
+        kingName.style.fontSize = `${currentFont}px`;
+
+        const availableWidth = kingInfoContainer.clientWidth;
+        if (availableWidth <= 0) return;
+
+        while (kingName.scrollWidth > availableWidth && currentFont > minFont) {
+            currentFont -= 1;
+            kingName.style.fontSize = `${currentFont}px`;
+        }
+    }
+    window.addEventListener('resize', fitKingNameSize);
+
     function formatTime(sec) {
         const m = Math.floor(sec / 60).toString().padStart(2, '0');
         const s = (sec % 60).toString().padStart(2, '0');
@@ -493,7 +518,7 @@
     }
 
     function updateBrushDot(e) {
-        if (!state.isMyTurnDrawing || state.stamp.active || checkAnyModalOpen() || state.tool === 'fill' || state.tool === 'pipette') {
+        if ((!state.isMyTurnDrawing && !state.isPracticeMode) || state.stamp.active || checkAnyModalOpen() || state.tool === 'fill' || state.tool === 'pipette') {
             customBrushDot.style.display = 'none';
             return;
         }
@@ -618,7 +643,7 @@
     }
 
     function startStroke(e) {
-        if (!state.isMyTurnDrawing || state.stamp.active) return;
+        if ((!state.isMyTurnDrawing && !state.isPracticeMode) || state.stamp.active) return;
         e.preventDefault();
         const pos = getCanvasCoords(e);
 
@@ -644,7 +669,7 @@
     }
 
     function moveStroke(e) {
-        if (!state.isMyTurnDrawing || !state.isDrawing || state.stamp.active) return;
+        if ((!state.isMyTurnDrawing && !state.isPracticeMode) || !state.isDrawing || state.stamp.active) return;
         e.preventDefault();
         const pos = getCanvasCoords(e);
         ctx.lineWidth = state.brushSize;
@@ -654,7 +679,7 @@
     }
 
     function endStroke(e) {
-        if (!state.isMyTurnDrawing || !state.isDrawing) return;
+        if ((!state.isMyTurnDrawing && !state.isPracticeMode) || !state.isDrawing) return;
         e.preventDefault();
         state.isDrawing = false;
         ctx.closePath();
@@ -792,7 +817,7 @@
         stampCtx.clearRect(0, 0, stampOverlayCanvas.width, stampOverlayCanvas.height);
         stampOverlayCanvas.classList.add('hidden');
         stampControlPanel.classList.add('hidden');
-        if (state.isMyTurnDrawing) {
+        if (state.isMyTurnDrawing || state.isPracticeMode) {
             drawingToolbar.classList.remove('hidden');
         }
     }
@@ -878,7 +903,7 @@
 
     if (toolTextBtn) {
         toolTextBtn.addEventListener('click', () => {
-            if (!state.isMyTurnDrawing) return;
+            if (!state.isMyTurnDrawing && !state.isPracticeMode) return;
             canvasTextInput.value = '';
             canvasTextColorPicker.value = state.brushColor || '#0f172a';
             textToolModal.classList.remove('hidden');
@@ -990,6 +1015,77 @@
             priceFixedDisplay.textContent = `${state.selectedPrice} ₽`;
         }
         submitBookingBtnText.textContent = `Оплатить ${state.selectedPrice} ₽ и открыть редактор`;
+        if (upgradePracticeToLiveBtnText) {
+            upgradePracticeToLiveBtnText.textContent = `Готово! Занять трон за ${state.selectedPrice} ₽`;
+        }
+    }
+
+    function enterPracticeMode() {
+        if (state.isMyTurnDrawing) return;
+        state.isPracticeMode = true;
+        bookingModal.classList.add('hidden');
+        lockedCanvasOverlay.classList.add('hidden');
+        emptyCanvasOverlay.classList.add('hidden');
+
+        practiceModeBanner.classList.remove('hidden');
+        drawingToolbar.classList.remove('hidden');
+        livePublishActions.classList.add('hidden');
+        practiceToolbarActions.classList.remove('hidden');
+
+        canvas.classList.remove('canvas-default', 'canvas-shielded');
+        canvas.classList.add('canvas-editing');
+
+        setActiveTool('brush');
+        fillCanvasWhite();
+        state.undoStack = [];
+        saveUndoState();
+        refreshBookingPriceInputs();
+        updateMainButtonState();
+        syncColumnsHeight();
+    }
+
+    function exitPracticeMode(restoreCanvas = true) {
+        if (!state.isPracticeMode) return;
+        closeStampMode();
+        state.isPracticeMode = false;
+        practiceModeBanner.classList.add('hidden');
+        drawingToolbar.classList.add('hidden');
+        practiceToolbarActions.classList.add('hidden');
+        livePublishActions.classList.remove('hidden');
+
+        canvas.classList.remove('canvas-editing');
+        customBrushDot.style.display = 'none';
+        updateMainButtonState();
+        if (restoreCanvas) {
+            syncFromDatabase();
+        }
+    }
+
+    if (startPracticeModeBtn) {
+        startPracticeModeBtn.addEventListener('click', enterPracticeMode);
+    }
+    if (exitPracticeTopBtn) {
+        exitPracticeTopBtn.addEventListener('click', () => exitPracticeMode(true));
+    }
+    if (exitPracticeToolbarBtn) {
+        exitPracticeToolbarBtn.addEventListener('click', () => exitPracticeMode(true));
+    }
+    if (upgradePracticeToLiveBtn) {
+        upgradePracticeToLiveBtn.addEventListener('click', () => {
+            if (state.stamp.active) {
+                applyStampBtn.click();
+            }
+            state.practiceDraftDataUrl = canvas.toDataURL('image/png');
+            if (!state.paymentsEnabled) {
+                alert('Приём оплаты временно приостановлен администратором.');
+                return;
+            }
+            refreshBookingPriceInputs();
+            if (!authorNameInput.value.trim()) {
+                authorNameInput.value = state.anonName;
+            }
+            bookingModal.classList.remove('hidden');
+        });
     }
 
     authorAvatarInput.addEventListener('change', (e) => {
@@ -1031,22 +1127,37 @@
 
     closeBookingModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
 
+    const BTN_CLASS_ACTIVE = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0';
+    const BTN_CLASS_IMMUNITY = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
+    const BTN_CLASS_LOCKED = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-2 cursor-not-allowed select-none';
+    const BTN_CLASS_DRAWING = 'py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-indigo-100 text-indigo-800 border border-indigo-300 flex items-center justify-center gap-2 cursor-default select-none';
+
     function updateMainButtonState() {
         const priceVal = Number(state.currentPrice) || 1;
+        if (upgradePracticeToLiveBtnText) {
+            upgradePracticeToLiveBtnText.textContent = `Готово! Занять трон за ${priceVal} ₽`;
+        }
+
         if (state.isMyTurnDrawing) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-palette"></i><span>Ты сейчас рисуешь!</span>';
+            startDrawBookingBtn.className = BTN_CLASS_DRAWING;
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-palette text-indigo-600 animate-pulse"></i><span>Рисуешь: ${formatTime(state.drawingSecondsLeft)}</span>`;
         } else if (state.someoneElseDrawing) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Холст занят (${priceVal} ₽)</span>`;
+            startDrawBookingBtn.className = BTN_CLASS_LOCKED;
+            const lockTimerStr = state.lockedSecondsLeft > 0 ? ` (${formatTime(state.lockedSecondsLeft)})` : '';
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-lock text-slate-500"></i><span>Холст занят${lockTimerStr}</span>`;
         } else if (state.immunitySecondsLeft > 0) {
             startDrawBookingBtn.disabled = true;
-            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-shield-halved"></i><span>Под защитой (${priceVal} ₽)</span>`;
+            startDrawBookingBtn.className = BTN_CLASS_IMMUNITY;
+            startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-shield-halved text-amber-600"></i><span>Иммунитет: ${formatTime(state.immunitySecondsLeft)}</span>`;
         } else if (!state.paymentsEnabled) {
             startDrawBookingBtn.disabled = true;
+            startDrawBookingBtn.className = BTN_CLASS_LOCKED;
             startDrawBookingBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Заявки на паузе</span>';
         } else {
             startDrawBookingBtn.disabled = false;
+            startDrawBookingBtn.className = BTN_CLASS_ACTIVE;
             startDrawBookingBtn.innerHTML = `<i class="fa-solid fa-paintbrush"></i><span>Нарисовать свое за <span id="headerCurrentPrice">${priceVal} ₽</span></span>`;
         }
     }
@@ -1095,9 +1206,12 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
             const diff = Math.floor((new Date(data.locked_until).getTime() - Date.now()) / 1000);
             if (diff > 0) {
                 state.someoneElseDrawing = true;
+                state.lockedSecondsLeft = diff;
                 state.lockedByName = data.locked_by || 'Аноним';
                 lockedByNameEl.textContent = state.lockedByName;
-                lockedCanvasOverlay.classList.remove('hidden');
+                if (!state.isPracticeMode) {
+                    lockedCanvasOverlay.classList.remove('hidden');
+                }
                 lockedTimerText.textContent = formatTime(diff);
                 updateMainButtonState();
                 return;
@@ -1106,15 +1220,20 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
 
         const wasDrawingBefore = state.someoneElseDrawing;
         state.someoneElseDrawing = false;
+        state.lockedSecondsLeft = 0;
         lockedCanvasOverlay.classList.add('hidden');
         updateMainButtonState();
 
-        if (wasDrawingBefore && !state.isMyTurnDrawing) {
+        if (wasDrawingBefore && !state.isMyTurnDrawing && !state.isPracticeMode) {
             await syncFromDatabase();
         }
     }
 
     function activatePaidDrawingSession(order, remainingSeconds = 1200) {
+        if (state.isPracticeMode) {
+            exitPracticeMode(false);
+        }
+
         state.bookingData = {
             name: order.author_name,
             social: order.author_link,
@@ -1127,29 +1246,34 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
 
         bookingModal.classList.add('hidden');
         lockedCanvasOverlay.classList.add('hidden');
+        practiceModeBanner.classList.add('hidden');
+        practiceToolbarActions.classList.add('hidden');
+        livePublishActions.classList.remove('hidden');
         drawingToolbar.classList.remove('hidden');
         updateMainButtonState();
 
         // Показываем предупреждение при разблокировке холста
         unlockWarningModal.classList.remove('hidden');
 
-        // Показываем таймер 20:00 прямо внутри верхней карточки Царя
         clearInterval(state.immunityInterval);
-        immunityBox.className = 'flex flex-col items-end bg-indigo-50 border border-indigo-300 rounded-xl px-3.5 py-2.5 shrink-0';
-        statusTimerIcon.className = 'fa-regular fa-clock text-indigo-600 animate-pulse';
-        statusTimerTitle.textContent = 'Твоё время:';
-        statusTimerTitle.className = 'text-indigo-800';
-        immunityTimerText.className = 'font-mono font-bold text-indigo-700 text-base sm:text-lg';
-        statusTimerSub.textContent = 'Твори свой шедевр!';
-        statusTimerSub.className = 'text-[11px] text-indigo-600/90 mt-0.5';
 
         canvas.classList.remove('canvas-default', 'canvas-shielded');
         canvas.classList.add('canvas-editing');
         emptyCanvasOverlay.classList.add('hidden');
 
         setActiveTool('brush');
-        fillCanvasWhite();
-        saveUndoState();
+        const savedPracticeDraft = localStorage.getItem('tsar_practice_draft');
+        if (savedPracticeDraft) {
+            localStorage.removeItem('tsar_practice_draft');
+            drawImageFromDataUrl(savedPracticeDraft, () => {
+                state.undoStack = [];
+                saveUndoState();
+            });
+        } else {
+            fillCanvasWhite();
+            state.undoStack = [];
+            saveUndoState();
+        }
         syncColumnsHeight();
 
         window.onbeforeunload = function() {
@@ -1157,10 +1281,10 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
         };
 
         clearInterval(state.drawingInterval);
-        immunityTimerText.textContent = formatTime(state.drawingSecondsLeft);
+        updateMainButtonState();
         state.drawingInterval = setInterval(() => {
             state.drawingSecondsLeft--;
-            immunityTimerText.textContent = formatTime(state.drawingSecondsLeft);
+            updateMainButtonState();
             if (state.drawingSecondsLeft <= 0) {
                 clearInterval(state.drawingInterval);
                 alert("20 минут истекли! Время вышло.");
@@ -1269,6 +1393,15 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 return;
             }
 
+            if (state.practiceDraftDataUrl) {
+                try {
+                    localStorage.setItem('tsar_practice_draft', state.practiceDraftDataUrl);
+                } catch (storageErr) {
+                    console.warn('Draft too large for localStorage:', storageErr);
+                }
+            } else {
+                localStorage.removeItem('tsar_practice_draft');
+            }
             localStorage.setItem('tsar_pending_order_token', data.secretToken);
             window.location.href = data.confirmationUrl;
         } catch (err) {
@@ -1382,8 +1515,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
     function clearImmunityUI() {
         state.immunitySecondsLeft = 0;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
-        if (!state.isMyTurnDrawing) {
-            immunityBox.classList.add('hidden');
+        if (!state.isMyTurnDrawing && !state.isPracticeMode) {
             canvas.classList.remove('canvas-shielded');
             canvas.classList.add('canvas-default');
         }
@@ -1395,14 +1527,6 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
         if (state.isMyTurnDrawing) return;
         if (state.immunityInterval) clearInterval(state.immunityInterval);
 
-        immunityBox.className = 'hidden flex-col items-end bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 shrink-0';
-        statusTimerIcon.className = 'fa-solid fa-shield-halved text-amber-600 animate-pulse';
-        statusTimerTitle.textContent = 'Иммунитет:';
-        statusTimerTitle.className = 'text-amber-800';
-        immunityTimerText.className = 'font-mono font-bold text-amber-700 text-base sm:text-lg';
-        statusTimerSub.textContent = 'Холст защищен от перебития';
-        statusTimerSub.className = 'text-[11px] text-amber-600/90 mt-0.5';
-
         function checkTime() {
             if (state.isMyTurnDrawing) return;
             const now = Date.now();
@@ -1412,12 +1536,11 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 clearImmunityUI();
             } else {
                 state.immunitySecondsLeft = diff;
-                immunityTimerText.textContent = formatTime(state.immunitySecondsLeft);
-                immunityBox.classList.remove('hidden');
-                immunityBox.classList.add('flex');
-                canvasShieldBadge.classList.remove('hidden');
-                canvas.classList.remove('canvas-default');
-                canvas.classList.add('canvas-shielded');
+                if (!state.isPracticeMode) {
+                    canvasShieldBadge.classList.remove('hidden');
+                    canvas.classList.remove('canvas-default');
+                    canvas.classList.add('canvas-shielded');
+                }
                 updateMainButtonState();
             }
         }
@@ -1597,6 +1720,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 state.lastKnownKingId = king.id;
 
                 kingName.textContent = king.name;
+                fitKingNameSize();
                 kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
                 kingPriceBadge.classList.remove('hidden');
 
@@ -1632,7 +1756,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                     if (kingWebsiteLink) kingWebsiteLink.classList.add('hidden');
                 }
 
-                if (!state.isMyTurnDrawing) {
+                if (!state.isMyTurnDrawing && !state.isPracticeMode) {
                     drawImageFromDataUrl(king.imageDataUrl);
                     emptyCanvasOverlay.classList.add('hidden');
                 }
@@ -1648,10 +1772,11 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
             } else {
                 state.lastKnownKingId = null;
                 kingName.textContent = 'Никто (холст свободен)';
+                fitKingNameSize();
                 kingPriceBadge.classList.add('hidden');
                 kingSocialWrapper.classList.add('hidden');
                 clearImmunityUI();
-                if (!state.isMyTurnDrawing) {
+                if (!state.isMyTurnDrawing && !state.isPracticeMode) {
                     fillCanvasWhite();
                     emptyCanvasOverlay.classList.remove('hidden');
                 }
@@ -1663,6 +1788,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
             state.currentPrice = 1;
             const priceEl = document.getElementById('headerCurrentPrice'); if (priceEl) priceEl.textContent = '1 ₽'; updateMainButtonState();
             kingName.textContent = 'Никто (холст свободен)';
+                fitKingNameSize();
             kingPriceBadge.classList.add('hidden');
             kingSocialWrapper.classList.add('hidden');
             clearImmunityUI();
@@ -1720,7 +1846,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
     setInterval(loadChatMessages, 4000);
     setInterval(syncSiteSettings, 8000);
     setInterval(() => {
-        if (!state.isMyTurnDrawing) syncFromDatabase();
+        if (!state.isMyTurnDrawing && !state.isPracticeMode) syncFromDatabase();
     }, 5000);
 
     // ================= ВЫРАВНИВАНИЕ ВЫСОТЫ КОЛОНОК СТРОГО ПО НИЗУ ХОЛСТА =================
