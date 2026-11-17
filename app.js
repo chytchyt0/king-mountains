@@ -463,14 +463,13 @@
         const availableWidth = kingInfoContainer.clientWidth;
         if (availableWidth <= 0) return;
 
-        // Сбрасываем трансформ и мерим ширину на базовом кегле 40px
         kingName.style.transform = '';
-        kingName.style.transformOrigin = 'left center';
+        kingName.style.letterSpacing = '';
         kingName.style.display = 'inline-block';
         kingName.style.width = 'auto';
 
         const baseFont = 40;
-        const maxFont = window.innerWidth < 640 ? 34 : 58;
+        const maxFont = window.innerWidth < 640 ? 36 : 64;
         const minFont = 14;
 
         kingName.style.fontSize = `${baseFont}px`;
@@ -481,18 +480,19 @@
             idealFont = Math.max(minFont, Math.min(maxFont, idealFont));
             kingName.style.fontSize = `${idealFont}px`;
 
-            // Добиваем точную подгонку по пикселям, если чуть вылезает
             while (kingName.scrollWidth > availableWidth && idealFont > minFont) {
                 idealFont -= 1;
                 kingName.style.fontSize = `${idealFont}px`;
             }
 
-            // Если имя очень короткое (например 3-5 букв) и даже при maxFont осталось место,
-            // мягко растягиваем по ширине всей строки (до 1.8x), чтобы заполнить пустоту
+            // Для коротких слов аккуратно добавляем межбуквенный интервал без искажения букв
+            const textLen = (kingName.textContent || '').trim().length;
             const finalWidth = kingName.scrollWidth;
-            if (finalWidth > 0 && finalWidth < availableWidth * 0.92) {
-                const scaleX = Math.min(availableWidth / finalWidth, 2.2);
-                kingName.style.transform = `scaleX(${scaleX.toFixed(3)})`;
+            if (textLen > 1 && finalWidth < availableWidth * 0.85) {
+                const extraSpace = Math.min((availableWidth - finalWidth) / (textLen - 1), 10);
+                if (extraSpace > 0.5) {
+                    kingName.style.letterSpacing = `${extraSpace.toFixed(1)}px`;
+                }
             }
         }
     }
