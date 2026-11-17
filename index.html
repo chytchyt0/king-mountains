@@ -63,19 +63,24 @@
                     <h1 class="font-display font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">
                         ЦАРЬ ХОЛСТА
                     </h1>
-                    <p class="text-xs text-slate-500">Перебей чужой шедевр. Зачем? Да кто его знает</p>
+                    <p class="text-xs text-slate-500">Перебей за бабосы чужой шедевр. Зачем? Да кто его знает</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <button 
-                    type="button" 
-                    id="startDrawBookingBtn"
-                    class="py-2.5 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
-                >
-                    <i class="fa-solid fa-paintbrush"></i>
-                    <span>Нарисовать свое за <span id="headerCurrentPrice">1 ₽</span></span>
-                </button>
+                <div class="flex flex-col items-center">
+                    <button 
+                        type="button" 
+                        id="startDrawBookingBtn"
+                        class="py-2 px-4 sm:px-5 rounded-xl font-display font-bold text-xs sm:text-sm bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none"
+                    >
+                        <i class="fa-solid fa-paintbrush"></i>
+                        <span>Нарисовать свое за <span id="headerCurrentPrice">1 ₽</span></span>
+                    </button>
+                    <span class="text-[10px] leading-tight text-slate-400 font-medium mt-1 text-center">
+                        Стоимость каждого нового захвата увеличивается на 50%
+                    </span>
+                </div>
 
                 <button type="button" id="openRulesBtn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-info text-indigo-500"></i>
