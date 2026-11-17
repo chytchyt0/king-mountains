@@ -100,6 +100,8 @@
     const kingSocialWrapper = document.getElementById('kingSocialWrapper');
     const kingSocialLink = document.getElementById('kingSocialLink');
     const kingSocialText = document.getElementById('kingSocialText');
+    const kingWebsiteLink = document.getElementById('kingWebsiteLink');
+    const kingWebsiteText = document.getElementById('kingWebsiteText');
     const kingAvatarDefault = document.getElementById('kingAvatarDefault');
     const kingAvatarImg = document.getElementById('kingAvatarImg');
 
@@ -177,6 +179,7 @@
     const bookingForm = document.getElementById('bookingForm');
     const authorNameInput = document.getElementById('authorNameInput');
     const authorSocialInput = document.getElementById('authorSocialInput');
+    const authorWebsiteInput = document.getElementById('authorWebsiteInput');
     const authorAvatarInput = document.getElementById('authorAvatarInput');
     const bookingAvatarPreview = document.getElementById('bookingAvatarPreview');
     const priceFixedDisplay = document.getElementById('priceFixedDisplay');
@@ -193,6 +196,8 @@
     const viewArtAuthorName = document.getElementById('viewArtAuthorName');
     const viewArtAuthorLink = document.getElementById('viewArtAuthorLink');
     const viewArtAuthorLinkText = document.getElementById('viewArtAuthorLinkText');
+    const viewArtWebsiteLink = document.getElementById('viewArtWebsiteLink');
+    const viewArtWebsiteLinkText = document.getElementById('viewArtWebsiteLinkText');
     const viewArtPrice = document.getElementById('viewArtPrice');
     const viewArtTime = document.getElementById('viewArtTime');
     const viewArtImage = document.getElementById('viewArtImage');
@@ -231,7 +236,31 @@
         unlockWarningModal.classList.add('hidden');
     });
 
-    function formatInstagramData(rawInput) {
+    function normalizeWebsiteData(rawUrl) {
+        if (!rawUrl) return null;
+        let clean = String(rawUrl).trim();
+        if (!clean) return null;
+        if (/^(javascript|data|vbscript|file):/i.test(clean)) return null;
+
+        let fullUrl = clean;
+        if (!/^https?:\/\//i.test(fullUrl)) {
+            fullUrl = 'https://' + fullUrl;
+        }
+
+        try {
+            const parsed = new URL(fullUrl);
+            if (!parsed.hostname || !parsed.hostname.includes('.')) return null;
+            const displayHost = parsed.hostname.replace(/^www\./i, '') + (parsed.pathname !== '/' ? parsed.pathname.replace(/\/$/, '') : '');
+            return {
+                display: displayHost,
+                url: parsed.href
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function normalizeInstaNick(rawInput) {
         if (!rawInput) return null;
         let clean = String(rawInput).trim();
         clean = clean
@@ -245,6 +274,26 @@
             display: `@${clean}`,
             url: `https://www.instagram.com/${encodeURIComponent(clean)}/`
         };
+    }
+
+    function parseAuthorLinks(rawStored) {
+        if (!rawStored) return { insta: null, site: null };
+        const parts = String(rawStored).split('|').map(p => p.trim()).filter(Boolean);
+        let insta = null;
+        let site = null;
+
+        for (const part of parts) {
+            if (/^https?:\/\//i.test(part) && !/instagram\.com\//i.test(part)) {
+                if (!site) site = normalizeWebsiteData(part);
+            } else if (part.startsWith('@') || /instagram\.com\//i.test(part)) {
+                if (!insta) insta = normalizeInstaNick(part);
+            } else if (part.includes('.')) {
+                if (!site) site = normalizeWebsiteData(part);
+            } else {
+                if (!insta) insta = normalizeInstaNick(part);
+            }
+        }
+        return { insta, site };
     }
 
     // ================= КОНФЕТТИ ПРИ ПУБЛИКАЦИИ =================
@@ -1187,9 +1236,13 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
         submitBookingBtnText.textContent = 'Переходим к оплате...';
 
         const name = authorNameInput.value.trim() || state.anonName;
-        const instaRaw = authorSocialInput.value.trim();
-        const instaObj = formatInstagramData(instaRaw);
-        const cleanSocialNick = instaObj ? instaObj.display : '';
+        const instaObj = normalizeInstaNick(authorSocialInput.value.trim());
+        const siteObj = authorWebsiteInput ? normalizeWebsiteData(authorWebsiteInput.value.trim()) : null;
+
+        const combinedParts = [];
+        if (instaObj) combinedParts.push(instaObj.display);
+        if (siteObj) combinedParts.push(siteObj.url);
+        const cleanSocialNick = combinedParts.join(' | ');
 
         try {
             const res = await fetch(PAY_FUNCTION_URL, {
@@ -1392,13 +1445,21 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
             viewArtAvatar.innerHTML = `👑`;
         }
 
-        const instaData = formatInstagramData(art.social);
-        if (instaData && !art.isBanned) {
-            viewArtAuthorLinkText.textContent = instaData.display;
-            viewArtAuthorLink.href = instaData.url;
+        const { insta, site } = parseAuthorLinks(art.social);
+        if (insta && !art.isBanned) {
+            viewArtAuthorLinkText.textContent = insta.display;
+            viewArtAuthorLink.href = insta.url;
             viewArtAuthorLink.classList.remove('hidden');
         } else {
             viewArtAuthorLink.classList.add('hidden');
+        }
+
+        if (site && !art.isBanned && viewArtWebsiteLink) {
+            viewArtWebsiteLinkText.textContent = site.display;
+            viewArtWebsiteLink.href = site.url;
+            viewArtWebsiteLink.classList.remove('hidden');
+        } else if (viewArtWebsiteLink) {
+            viewArtWebsiteLink.classList.add('hidden');
         }
 
         if (art.aiComment && !art.isBanned) {
@@ -1455,10 +1516,13 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 ? `<img src="${item.avatar}" class="w-7 h-7 rounded-full object-cover border border-slate-200">`
                 : `<div class="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">👑</div>`;
 
-            const instaData = formatInstagramData(item.social);
+            const { insta, site } = parseAuthorLinks(item.social);
+            const linkLabels = [];
+            if (insta) linkLabels.push(`Instagram*: ${insta.display}`);
+            if (site) linkLabels.push(site.display);
             const subText = item.isBanned 
                 ? '<span class="text-rose-500 font-medium">скрыто модератором</span>' 
-                : escapeHtml(instaData ? `Instagram*: ${instaData.display}` : 'без соцсетей');
+                : escapeHtml(linkLabels.length > 0 ? linkLabels.join(' • ') : 'без ссылок');
 
             card.innerHTML = `
                 <img src="${item.imageDataUrl}" class="w-12 h-9 object-cover bg-slate-50 rounded-lg border border-slate-200 shrink-0">
@@ -1545,13 +1609,27 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                     kingAvatarDefault.classList.remove('hidden');
                 }
 
-                const instaData = formatInstagramData(king.social);
-                if (instaData) {
+                const { insta, site } = parseAuthorLinks(king.social);
+                if (insta || site) {
                     kingSocialWrapper.classList.remove('hidden');
-                    kingSocialText.textContent = instaData.display;
-                    kingSocialLink.href = instaData.url;
+                    if (insta) {
+                        kingSocialText.textContent = insta.display;
+                        kingSocialLink.href = insta.url;
+                        kingSocialLink.classList.remove('hidden');
+                    } else {
+                        kingSocialLink.classList.add('hidden');
+                    }
+                    if (site && kingWebsiteLink) {
+                        kingWebsiteText.textContent = site.display;
+                        kingWebsiteLink.href = site.url;
+                        kingWebsiteLink.classList.remove('hidden');
+                    } else if (kingWebsiteLink) {
+                        kingWebsiteLink.classList.add('hidden');
+                    }
                 } else {
                     kingSocialWrapper.classList.add('hidden');
+                    kingSocialLink.classList.add('hidden');
+                    if (kingWebsiteLink) kingWebsiteLink.classList.add('hidden');
                 }
 
                 if (!state.isMyTurnDrawing) {
