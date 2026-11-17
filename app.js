@@ -111,9 +111,6 @@
     const kingInfoContainer = document.getElementById('kingInfoContainer');
     const kingRightStats = document.getElementById('kingRightStats');
     const kingReignTimer = document.getElementById('kingReignTimer');
-    const kingQuickLikeBtn = document.getElementById('kingQuickLikeBtn');
-    const kingQuickLikeIcon = document.getElementById('kingQuickLikeIcon');
-    const kingQuickLikeCount = document.getElementById('kingQuickLikeCount');
 
     const practiceModeBanner = document.getElementById('practiceModeBanner');
     const exitPracticeTopBtn = document.getElementById('exitPracticeTopBtn');
@@ -507,11 +504,6 @@
         }
 
         kingRightStats.classList.remove('hidden');
-        kingQuickLikeCount.textContent = king.likes || 0;
-        const alreadyLiked = state.likedIds.includes(king.id);
-        kingQuickLikeIcon.className = alreadyLiked
-            ? 'fa-solid fa-heart text-sm text-rose-600'
-            : 'fa-regular fa-heart text-sm';
 
         if (kingReignInterval) clearInterval(kingReignInterval);
         const startMs = new Date(king.createdAt).getTime();
@@ -524,27 +516,6 @@
         }
         tickReign();
         kingReignInterval = setInterval(tickReign, 1000);
-    }
-
-    if (kingQuickLikeBtn) {
-        kingQuickLikeBtn.addEventListener('click', async () => {
-            const king = state.currentKing;
-            if (!king || !king.id) return;
-            if (state.likedIds.includes(king.id)) return;
-
-            state.likedIds.push(king.id);
-            localStorage.setItem('tsar_liked_ids', JSON.stringify(state.likedIds));
-
-            king.likes = (king.likes || 0) + 1;
-            kingQuickLikeCount.textContent = king.likes;
-            kingQuickLikeIcon.className = 'fa-solid fa-heart text-sm text-rose-600 animate-ping';
-            setTimeout(() => {
-                kingQuickLikeIcon.className = 'fa-solid fa-heart text-sm text-rose-600';
-            }, 300);
-
-            renderHistory();
-            await supabaseClient.rpc('increment_like', { p_art_id: king.id });
-        });
     }
 
     function formatTime(sec) {
@@ -1800,7 +1771,6 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
                 kingPriceBadge.classList.remove('hidden');
                 updateKingReignUI(king);
-                fitKingNameSize();
 
                 if (king.avatar) {
                     kingAvatarImg.src = king.avatar;
@@ -1833,6 +1803,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                     kingSocialLink.classList.add('hidden');
                     if (kingWebsiteLink) kingWebsiteLink.classList.add('hidden');
                 }
+                fitKingNameSize();
 
                 if (!state.isMyTurnDrawing && !state.isPracticeMode) {
                     drawImageFromDataUrl(king.imageDataUrl);
