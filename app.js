@@ -109,6 +109,11 @@
     const kingAvatarDefault = document.getElementById('kingAvatarDefault');
     const kingAvatarImg = document.getElementById('kingAvatarImg');
     const kingInfoContainer = document.getElementById('kingInfoContainer');
+    const kingRightStats = document.getElementById('kingRightStats');
+    const kingReignTimer = document.getElementById('kingReignTimer');
+    const kingQuickLikeBtn = document.getElementById('kingQuickLikeBtn');
+    const kingQuickLikeIcon = document.getElementById('kingQuickLikeIcon');
+    const kingQuickLikeCount = document.getElementById('kingQuickLikeCount');
 
     const practiceModeBanner = document.getElementById('practiceModeBanner');
     const exitPracticeTopBtn = document.getElementById('exitPracticeTopBtn');
@@ -468,35 +473,79 @@
         kingName.style.display = 'inline-block';
         kingName.style.width = 'auto';
 
-        const baseFont = 40;
-        const maxFont = window.innerWidth < 640 ? 36 : 64;
+        const maxFont = window.innerWidth < 640 ? 22 : 34;
         const minFont = 14;
+        let currentFont = maxFont;
+        kingName.style.fontSize = `${currentFont}px`;
 
-        kingName.style.fontSize = `${baseFont}px`;
-        const measuredWidth = kingName.scrollWidth;
-
-        if (measuredWidth > 0) {
-            let idealFont = Math.floor(baseFont * ((availableWidth - 4) / measuredWidth));
-            idealFont = Math.max(minFont, Math.min(maxFont, idealFont));
-            kingName.style.fontSize = `${idealFont}px`;
-
-            while (kingName.scrollWidth > availableWidth && idealFont > minFont) {
-                idealFont -= 1;
-                kingName.style.fontSize = `${idealFont}px`;
-            }
-
-            // Для коротких слов аккуратно добавляем межбуквенный интервал без искажения букв
-            const textLen = (kingName.textContent || '').trim().length;
-            const finalWidth = kingName.scrollWidth;
-            if (textLen > 1 && finalWidth < availableWidth * 0.85) {
-                const extraSpace = Math.min((availableWidth - finalWidth) / (textLen - 1), 10);
-                if (extraSpace > 0.5) {
-                    kingName.style.letterSpacing = `${extraSpace.toFixed(1)}px`;
-                }
-            }
+        while (kingName.scrollWidth > availableWidth && currentFont > minFont) {
+            currentFont -= 1;
+            kingName.style.fontSize = `${currentFont}px`;
         }
     }
     window.addEventListener('resize', fitKingNameSize);
+
+    let kingReignInterval = null;
+
+    function formatReignDuration(totalSec) {
+        const sec = Math.max(0, Math.floor(totalSec));
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+        const s = (sec % 60).toString().padStart(2, '0');
+        if (h > 0) {
+            return `${h}:${m}:${s}`;
+        }
+        return `${m}:${s}`;
+    }
+
+    function updateKingReignUI(king) {
+        if (!kingRightStats) return;
+        if (!king) {
+            kingRightStats.classList.add('hidden');
+            if (kingReignInterval) clearInterval(kingReignInterval);
+            return;
+        }
+
+        kingRightStats.classList.remove('hidden');
+        kingQuickLikeCount.textContent = king.likes || 0;
+        const alreadyLiked = state.likedIds.includes(king.id);
+        kingQuickLikeIcon.className = alreadyLiked
+            ? 'fa-solid fa-heart text-sm text-rose-600'
+            : 'fa-regular fa-heart text-sm';
+
+        if (kingReignInterval) clearInterval(kingReignInterval);
+        const startMs = new Date(king.createdAt).getTime();
+
+        function tickReign() {
+            const diffSec = (Date.now() - startMs) / 1000;
+            if (kingReignTimer) {
+                kingReignTimer.textContent = formatReignDuration(diffSec);
+            }
+        }
+        tickReign();
+        kingReignInterval = setInterval(tickReign, 1000);
+    }
+
+    if (kingQuickLikeBtn) {
+        kingQuickLikeBtn.addEventListener('click', async () => {
+            const king = state.currentKing;
+            if (!king || !king.id) return;
+            if (state.likedIds.includes(king.id)) return;
+
+            state.likedIds.push(king.id);
+            localStorage.setItem('tsar_liked_ids', JSON.stringify(state.likedIds));
+
+            king.likes = (king.likes || 0) + 1;
+            kingQuickLikeCount.textContent = king.likes;
+            kingQuickLikeIcon.className = 'fa-solid fa-heart text-sm text-rose-600 animate-ping';
+            setTimeout(() => {
+                kingQuickLikeIcon.className = 'fa-solid fa-heart text-sm text-rose-600';
+            }, 300);
+
+            renderHistory();
+            await supabaseClient.rpc('increment_like', { p_art_id: king.id });
+        });
+    }
 
     function formatTime(sec) {
         const m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -1634,6 +1683,10 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
         likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600 animate-ping';
         setTimeout(() => { likeArtIcon.className = 'fa-solid fa-heart text-sm text-rose-600'; }, 300);
 
+        if (state.currentKing && state.currentKing.id === art.id) {
+            updateKingReignUI(state.currentKing);
+        }
+        renderHistory();
         if (art.id) {
             await supabaseClient.rpc('increment_like', { p_art_id: art.id });
         }
@@ -1728,6 +1781,7 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                         likes: row.likes || 0,
                         isBanned: Boolean(row.is_banned) || isSvgBanned,
                         aiComment: row.ai_comment || '',
+                        createdAt: row.created_at,
                         timeStr: timeStr,
                         imageDataUrl: row.image_data
                     };
@@ -1743,9 +1797,10 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
                 state.lastKnownKingId = king.id;
 
                 kingName.textContent = king.name;
-                fitKingNameSize();
                 kingPriceBadge.textContent = `Захватил за ${king.price} ₽`;
                 kingPriceBadge.classList.remove('hidden');
+                updateKingReignUI(king);
+                fitKingNameSize();
 
                 if (king.avatar) {
                     kingAvatarImg.src = king.avatar;
@@ -1795,8 +1850,9 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
             } else {
                 state.lastKnownKingId = null;
                 kingName.textContent = 'Никто (холст свободен)';
-                fitKingNameSize();
                 kingPriceBadge.classList.add('hidden');
+                updateKingReignUI(null);
+                fitKingNameSize();
                 kingSocialWrapper.classList.add('hidden');
                 clearImmunityUI();
                 if (!state.isMyTurnDrawing && !state.isPracticeMode) {
