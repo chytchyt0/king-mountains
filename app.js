@@ -460,17 +460,40 @@
 
     function fitKingNameSize() {
         if (!kingName || !kingInfoContainer) return;
-        const maxFont = window.innerWidth < 640 ? 22 : 34;
-        const minFont = 14;
-        let currentFont = maxFont;
-        kingName.style.fontSize = `${currentFont}px`;
-
         const availableWidth = kingInfoContainer.clientWidth;
         if (availableWidth <= 0) return;
 
-        while (kingName.scrollWidth > availableWidth && currentFont > minFont) {
-            currentFont -= 1;
-            kingName.style.fontSize = `${currentFont}px`;
+        // Сбрасываем трансформ и мерим ширину на базовом кегле 40px
+        kingName.style.transform = '';
+        kingName.style.transformOrigin = 'left center';
+        kingName.style.display = 'inline-block';
+        kingName.style.width = 'auto';
+
+        const baseFont = 40;
+        const maxFont = window.innerWidth < 640 ? 34 : 58;
+        const minFont = 14;
+
+        kingName.style.fontSize = `${baseFont}px`;
+        const measuredWidth = kingName.scrollWidth;
+
+        if (measuredWidth > 0) {
+            let idealFont = Math.floor(baseFont * ((availableWidth - 4) / measuredWidth));
+            idealFont = Math.max(minFont, Math.min(maxFont, idealFont));
+            kingName.style.fontSize = `${idealFont}px`;
+
+            // Добиваем точную подгонку по пикселям, если чуть вылезает
+            while (kingName.scrollWidth > availableWidth && idealFont > minFont) {
+                idealFont -= 1;
+                kingName.style.fontSize = `${idealFont}px`;
+            }
+
+            // Если имя очень короткое (например 3-5 букв) и даже при maxFont осталось место,
+            // мягко растягиваем по ширине всей строки (до 1.8x), чтобы заполнить пустоту
+            const finalWidth = kingName.scrollWidth;
+            if (finalWidth > 0 && finalWidth < availableWidth * 0.92) {
+                const scaleX = Math.min(availableWidth / finalWidth, 2.2);
+                kingName.style.transform = `scaleX(${scaleX.toFixed(3)})`;
+            }
         }
     }
     window.addEventListener('resize', fitKingNameSize);
@@ -1880,6 +1903,9 @@ if (chatMessageInput && sendChatBtn && toggleEmojiBtn) {
     setTimeout(syncColumnsHeight, 100);
     // ======================================================================================
 
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => fitKingNameSize());
+    }
     syncSiteSettings();
     loadChatMessages();
     syncFromDatabase().then(() => checkReturnedPaymentOrder());
